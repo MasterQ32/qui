@@ -7,7 +7,7 @@ SRC_URI="${P}.stub"
 
 LICENSE="GPLv2"
 
-BUILD_DEPEND="=sdl-1.2.14"
+BUILD_DEPEND="=sdl-1.2.14 =sdl-image-1.2.10 =libpng-1.4.12 =libjpeg-8b =zlib-1.2.8"
 RUN_DEPEND=""
 
 MY_S="${S}/${P}"

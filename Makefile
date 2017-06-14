@@ -9,7 +9,7 @@ CPTH = install -d
 all: qui demo
 
 qui: qui.c
-	$(BCC) qui -std=c99 -I include qui.c -lSDL \
+	$(BCC) qui -std=c99 -I include qui.c -lSDL_image -lSDL  -lpng  -ljpeg -lz \
 		-I$(WORKDIR)/env/include \
 		-L$(WORKDIR)/env/lib
 
