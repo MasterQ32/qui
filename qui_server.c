@@ -33,6 +33,14 @@ struct window
 struct window * top = NULL;
 struct window * bottom = NULL;
 
+SDL_Rect getWindowRect(struct window * window) {
+	return (SDL_Rect) {
+		window->left, window->top,
+		window->width + 5,
+		window->height + 25,
+	};
+};
+
 struct window * getWindow(uint32_t id)
 {
 	// TODO: Lock here!
@@ -71,6 +79,22 @@ void removeWindow(struct window * win)
 	if(bottom == win) {
 		bottom = win->next;
 	}
+}
+
+struct window * getWindowByPosition(int x, int y)
+{
+	// TODO: Lock here
+	for(struct window * win = bottom; win != NULL; win = win->next) {
+		SDL_Rect rect = getWindowRect(win);
+		if(x < rect.x || y < rect.y) {
+			continue;
+		}
+		if(x >= (rect.x + rect.w) || y >= (rect.y + rect.h)) {
+			continue;
+		}
+		return win;
+	}
+	return NULL;
 }
 
 void svcWindowCreate(pid_t client, uint32_t correlation_id, size_t size, void *args)
@@ -173,11 +197,7 @@ void renderWindow(struct window * window)
 		window->flags &= ~WF_DIRTY;
 	}
 
-	const SDL_Rect target = {
-		window->left, window->top,
-	    window->width + 5,
-	    window->height + 25,
-	};
+	const SDL_Rect target = getWindowRect(window);
 	{
 		SDL_Rect outline = target;
 		outline.x -= 1;
@@ -331,7 +351,8 @@ int main(int argc, char** argv)
 	SDL_Event e;
 	bool quit = false;
 	int mouseX = 0, mouseY = 0;
-	bool dragging = false;
+	bool dirty = true;
+	struct window * draggedWindow = NULL;
 	while(!quit)
 	{
 		while(SDL_PollEvent(&e))
@@ -339,31 +360,38 @@ int main(int argc, char** argv)
 			if(e.type == SDL_QUIT) quit = true;
 			if(e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE) quit = true;
 
-			/*
 			if(e.type == SDL_MOUSEBUTTONDOWN) {
-				printf("x,y=(%d,%d)\n", e.button.x, e.button.y);
-				dragging = (e.button.x >= target.x + 2)
-					&& (e.button.x <= target.x + target.w - 3)
-					&& (e.button.y >= target.y + 3)
-					&& (e.button.y <= target.y + 21);
+				struct window * clicked = getWindowByPosition(
+					e.button.x,
+					e.button.y);
+				if(clicked != NULL) {
+					SDL_Rect target = getWindowRect(clicked);
+					bool dragging = (e.button.x >= target.x + 2)
+						&& (e.button.x <= target.x + target.w - 3)
+						&& (e.button.y >= target.y + 3)
+						&& (e.button.y <= target.y + 21);
+					if(dragging) {
+						draggedWindow = clicked;
+					}
+					// TODO: Transport event to client!
+				}
 			}
 			if(e.type == SDL_MOUSEBUTTONUP) {
-				dragging = false;
+				draggedWindow = NULL;
 			}
 			if(e.type == SDL_MOUSEMOTION)
 			{
 				mouseX = e.motion.x;
 				mouseY = e.motion.y;
-				if(dragging) {
-					target.x += e.motion.xrel;
-					target.y += e.motion.yrel;
+				dirty = true;
+				if(draggedWindow != NULL) {
+					draggedWindow->left += e.motion.xrel;
+					draggedWindow->top += e.motion.yrel;
 				}
 			}
-			*/
 		}
 
 		// anything dirty?
-		bool dirty = false;
 		for(struct window * it = bottom; it != NULL; it = it->next) {
 			if(it->flags & WF_DIRTY) {
 				dirty = true;
@@ -391,8 +419,11 @@ int main(int argc, char** argv)
 
 			// Render everything
 			SDL_Flip(backbuffer);
+
+			dirty = false;
 		}
-		SDL_Delay(10);
+
+		SDL_Delay(1);
 	}
 
 	SDL_Quit();
