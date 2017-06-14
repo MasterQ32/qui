@@ -1,228 +1,101 @@
-#include <video/video.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <syscall.h>
-#include <types.h>
-#include <unistd.h>
-#include <stdbool.h>
+#include "qui.h"
+#include "quidata.h"
 
-#include <SDL/SDL.h>
-#include <SDL/SDL_image.h>
-
-#include <rpc.h>
 #include <init.h>
+#include <rpc.h>
+#include <stdlib.h>
 
-driver_context_t* graphics;
-video_bitmap_t *frontbuffer;
+static pid_t svc = 0;
 
-void svcWindowCreate(pid_t client, uint32_t correlation_id, size_t size, void *args)
+bool qui_open()
 {
-	printf("Service got request!\n");
-	rpc_send_dword_response(client, correlation_id, 42);
+	svc = init_service_get("gui");
+	return (svc != 0);
 }
 
-int main(int argc, char** argv)
+window_t * qui_createWindow(uint32_t width, uint32_t height, uint32_t flags)
 {
-	// Write to serial out instead of vconsole
-	stdout = NULL;
-	
-	// video_init();
-	
-	if(SDL_Init(SDL_INIT_VIDEO) < 0) {
-		printf("Failed to initialize SDL: %s\n", SDL_GetError());
-		exit(EXIT_FAILURE);
+	if(width <= 0 || height <= 0) {
+		return NULL;
 	}
-	
-	if(IMG_Init(IMG_INIT_PNG) < 0) {
-		printf("Failed to initialize IMG: %s\n", IMG_GetError());
-		exit(EXIT_FAILURE);
-	}
-	
-	SDL_Surface * window = SDL_SetVideoMode(1024, 768, 24, 0);
-	if(window == NULL) {
-		printf("Failed to open video: %s\n", SDL_GetError());
-		exit(EXIT_FAILURE);
-	}
-	
-	SDL_Surface * skin = IMG_Load("skin.png");
-	if(skin == NULL) {
-		printf("Failed to open image: %s\n", IMG_GetError());
-		exit(EXIT_FAILURE);
-	}
-	
-	SDL_Surface * cursor = IMG_Load("cursor.png");
-	if(cursor == NULL) {
-		printf("Failed to open image: %s\n", IMG_GetError());
-		exit(EXIT_FAILURE);
-	}
-	
-	SDL_ShowCursor(SDL_DISABLE);
-	
-	init_service_register("gui");
-	
-	register_message_handler("WNCREATE", svcWindowCreate);
-	
-	SDL_Event e;
-	bool quit = false;
-	SDL_Rect target = {
-		16, 16,
-		240, 320
+	struct wincreate_req req = {
+		.width = width,
+		.height = height,
 	};
-	int mouseX = 0, mouseY = 0;
-	bool dragging = false;
-	while(!quit)
-	{
-		while(SDL_PollEvent(&e))
-		{
-			if(e.type == SDL_QUIT) quit = true;
-			if(e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE) quit = true;
-			
-			if(e.type == SDL_MOUSEBUTTONDOWN) {
-				printf("x,y=(%d,%d)\n", e.button.x, e.button.y);
-				dragging = (e.button.x >= target.x + 2)
-					&& (e.button.x <= target.x + target.w - 3)
-					&& (e.button.y >= target.y + 3)
-					&& (e.button.y <= target.y + 21);
-			}
-			if(e.type == SDL_MOUSEBUTTONUP) {
-				dragging = false;
-			}
-			if(e.type == SDL_MOUSEMOTION)
-			{
-				mouseX = e.motion.x;
-				mouseY = e.motion.y;
-				if(dragging) {
-					target.x += e.motion.xrel;
-					target.y += e.motion.yrel;
-				}
-			}
-		}
-		
-		// Clear screen
-		SDL_FillRect(window, NULL, SDL_MapRGB(window->format, 0, 0x80, 0x80));
-		
-		// Draw window!
-		{
-			SDL_Rect rect, src;
-			{
-				target.x -= 1;
-				target.y -= 1;
-				target.w += 2;
-				target.h += 2;
-				SDL_FillRect(window, &target, SDL_MapRGB(window->format, 0xFF, 0x00, 0x00));
 
-				target.x += 1;
-				target.y += 1;
-				target.w -= 2;
-				target.h -= 2;
-			}
-			SDL_FillRect(window, &target, SDL_MapRGB(window->format, 0xC0, 0xC0, 0xC0));
-			
-			src = (SDL_Rect) {
-				0, 0,
-				4, 22
-			};
-			rect = (SDL_Rect) {
-				target.x, target.y,
-				4, 22
-			};
-			SDL_BlitSurface(skin, &src, window, &rect);
-			
-			for(int i = 4; i < (target.w - 22); i += 22)
-			{
-				src = (SDL_Rect) {
-					4, 0,
-					22, 22
-				};
-				rect = (SDL_Rect) {
-					target.x + i, target.y,
-					22, 22
-				};
-				if(rect.x + rect.w > target.w - 22)
-				{
-					rect.w = target.w - i;
-				}
-				SDL_BlitSurface(skin, &src, window, &rect);
-				rect.y = target.y + target.h - 3;
-				src.y = 41;
-				SDL_BlitSurface(skin, &src, window, &rect);
-			}
-			
-			src = (SDL_Rect) {
-				34, 0,
-				22, 22
-			};
-			rect = (SDL_Rect) {
-				target.x + target.w - 22, target.y,
-				4, 22
-			};
-			SDL_BlitSurface(skin, &src, window, &rect);
-			
-			src = (SDL_Rect) {
-				0, 41,
-				4, 3
-			};
-			rect = (SDL_Rect) {
-				target.x, target.y + target.h - 3,
-				4, 3
-			};
-			SDL_BlitSurface(skin, &src, window, &rect);
-			
-			src = (SDL_Rect) {
-				34, 41,
-				22, 3
-			};
-			rect = (SDL_Rect) {
-				target.x + target.w - 22, target.y + target.h - 3,
-				4, 3
-			};
-			SDL_BlitSurface(skin, &src, window, &rect);
-			
-			
-			
-			
-			for(int i = 22; i < (target.h - 3); i += rect.h)
-			{
-				src = (SDL_Rect) {
-					0, 22,
-					3, 19
-				};
-				rect = (SDL_Rect) {
-					target.x, target.y + i,
-					src.w, src.h
-				};
-				if(rect.y + rect.h > (target.y + target.h - 3))
-				{
-					rect.h = target.h - 3 - i;
-					src.h = rect.h;
-				}
-				
-				src.x = 0;
-				rect.x = target.x;
-				SDL_BlitSurface(skin, &src, window, &rect);
-				src.x = 53;
-				rect.x = target.x + target.w - 3;
-				SDL_BlitSurface(skin, &src, window, &rect);
-			}
-		}
-		
-		SDL_BlitSurface(
-			cursor,
-			NULL,
-			window,
-			&((SDL_Rect){
-				mouseX, mouseY,
-				16, 24
-			}));
-		
-		// Render everything
-		SDL_Flip(window);
-		SDL_Delay(10);
+	response_t *respdata = rpc_get_response(svc, MSG_WINDOW_CREATE, sizeof req, (char*)&req);
+	if(respdata->data_length < sizeof(struct wincreate_resp)) {
+		printf("CLIENT: Got useless response!\n");
+		// TODO: Release resp?
+		free(respdata->data);
+		free(respdata);
+		return NULL;
 	}
-	
-	SDL_Quit();
-	
-	return EXIT_SUCCESS;
+	struct wincreate_resp * resp = respdata->data;
+
+	window_t * window = malloc(sizeof(window_t));
+	window->id = resp->framebuf;
+	window->width = resp->width;
+	window->height = resp->height;
+	window->frameBuffer = open_shared_memory(window->id);
+
+	free(respdata->data);
+	free(respdata);
+
+	if(window->frameBuffer == NULL) {
+		printf("CLIENT: Failed to create framebuffer %d\n", resp->framebuf);
+		return NULL;
+	}
+
+	qui_clearWindow(window, RGB(0,0,0));
+
+	return window;
+}
+
+void qui_clearWindow(window_t * window, color_t color)
+{
+	if(svc == 0) {
+		// TODO: Maybe fail here!
+		return;
+	}
+	if(window == NULL) {
+		return;
+	}
+	for(uint32_t y = 0; y < window->height; y++) {
+		for(uint32_t x = 0; x < window->width; x++) {
+			window->frameBuffer[window->width * y + x] = color;
+		}
+	}
+}
+
+void qui_updateWindow(window_t * window)
+{
+	if(svc == 0) {
+		// TODO: Maybe fail here!
+		return;
+	}
+	if(window == NULL) {
+		return;
+	}
+	int result = rpc_get_int(svc, MSG_WINDOW_UPDATE, sizeof window->id, (char*)&window->id);
+	// TODO: Use result!
+}
+
+void qui_destroyWindow(window_t * window)
+{
+	if(svc == 0) {
+		// TODO: Maybe fail here!
+		return;
+	}
+	if(window == NULL) {
+		return;
+	}
+
+	window->frameBuffer = NULL;
+	close_shared_memory(window->id);
+
+	int result = rpc_get_int(svc, MSG_WINDOW_DESTROY, sizeof window->id, (char*)&window->id);
+	// TODO: Use result!
+
+	free(window);
 }
