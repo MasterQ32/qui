@@ -40,7 +40,7 @@ int main(int argc, char ** argv)
 
 		++anim;
 
-		msleep(100);
+		sleep(1);
 	}
 
 	qui_destroyWindow(window);

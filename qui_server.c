@@ -17,6 +17,11 @@
 #include "qui.h"
 #include "quidata.h"
 
+#define STR(x) #x
+#define XSTR(x) STR(x)
+#define TRACE_BEGIN() printf("SERVER: → %s()\n", __func__);
+#define TRACE_END()   printf("SERVER: ← %s()\n", __func__);
+
 #define WF_DIRTY (1<<0)
 
 struct window
@@ -46,6 +51,7 @@ struct window * getWindow(uint32_t id)
 	// TODO: Lock here!
 	for(struct window * win = bottom; win != NULL; win = win->next) {
 		if(win->membuf == id) {
+			v();
 			return win;
 		}
 	}
@@ -54,7 +60,7 @@ struct window * getWindow(uint32_t id)
 
 void insertWindow(struct window * win)
 {
-	// TODO: Lock here!
+	TRACE_BEGIN();
 	if(top != NULL) {
 		top->next = win;
 		win->previous = top;
@@ -63,10 +69,12 @@ void insertWindow(struct window * win)
 		top = win;
 		bottom = win;
 	}
+	TRACE_END();
 }
 
 void removeWindow(struct window * win)
 {
+	TRACE_BEGIN();
 	if(win->previous != NULL) {
 		win->previous->next = win->next;
 	}
@@ -79,12 +87,26 @@ void removeWindow(struct window * win)
 	if(bottom == win) {
 		bottom = win->next;
 	}
+	win->next = NULL;
+	win->previous = NULL;
+	TRACE_END();
+}
+
+void bringToFront(struct window * window)
+{
+	TRACE_BEGIN();
+
+	// This will move the window to the front of the list
+	removeWindow(window);
+	insertWindow(window);
+
+	TRACE_END();
 }
 
 struct window * getWindowByPosition(int x, int y)
 {
-	// TODO: Lock here
-	for(struct window * win = bottom; win != NULL; win = win->next) {
+	TRACE_BEGIN();
+	for(struct window * win = top; win != NULL; win = win->previous) {
 		SDL_Rect rect = getWindowRect(win);
 		if(x < rect.x || y < rect.y) {
 			continue;
@@ -92,8 +114,10 @@ struct window * getWindowByPosition(int x, int y)
 		if(x >= (rect.x + rect.w) || y >= (rect.y + rect.h)) {
 			continue;
 		}
+		TRACE_END();
 		return win;
 	}
+	TRACE_END();
 	return NULL;
 }
 
@@ -178,6 +202,7 @@ SDL_Surface * skin;
 
 void renderWindow(struct window * window)
 {
+	TRACE_BEGIN();
 	if(backbuffer == NULL || skin == NULL) {
 		return;
 	}
@@ -303,6 +328,7 @@ void renderWindow(struct window * window)
 		NULL,
 		backbuffer,
 		&rect);
+	TRACE_END();
 }
 
 int main(int argc, char** argv)
@@ -365,6 +391,9 @@ int main(int argc, char** argv)
 					e.button.x,
 					e.button.y);
 				if(clicked != NULL) {
+
+					bringToFront(clicked);
+
 					SDL_Rect target = getWindowRect(clicked);
 					bool dragging = (e.button.x >= target.x + 2)
 						&& (e.button.x <= target.x + target.w - 3)
@@ -372,6 +401,7 @@ int main(int argc, char** argv)
 						&& (e.button.y <= target.y + 21);
 					if(dragging) {
 						draggedWindow = clicked;
+						dirty = true;
 					}
 					// TODO: Transport event to client!
 				}
@@ -423,7 +453,9 @@ int main(int argc, char** argv)
 			dirty = false;
 		}
 
-		SDL_Delay(1);
+		// SDL_Delay(10);
+		yield();
+		// wait_for_rpc();
 	}
 
 	SDL_Quit();
