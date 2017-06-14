@@ -6,16 +6,21 @@ CPTH = install -d
 
 .PHONY: all clean install
 
-all: qui
+all: qui demo
 
 qui: qui.c
-	$(BCC) qui -std=c99 -I include qui.c
+	$(BCC) qui -std=c99 -I include qui.c -lSDL \
+		-I$(WORKDIR)/env/include \
+		-L$(WORKDIR)/env/lib
+
+demo: demo.c
+	$(BCC) demo -std=c99 -I include demo.c
 
 clean:
-	-$(RM) qui
+	-$(RM) qui demo
 
 install:
 	$(CPTH) $(INSTALL_TO)/bin
-	$(COPY) qui $(INSTALL_TO)/bin
+	$(COPY) qui demo $(INSTALL_TO)/bin
 
-	$(COPY) qui /home/felix/projects/tyn/tyndur/build/root-local/
+	$(COPY) qui demo /home/felix/projects/tyn/tyndur/build/root-local/

@@ -1,0 +1,31 @@
+include toolchain
+include lutils
+
+DESCRIPTION="An experimental UI system"
+HOMEPAGE="https://mq32.de"
+SRC_URI="${P}.stub"
+
+LICENSE="GPLv2"
+
+BUILD_DEPEND="=sdl-1.2.14"
+RUN_DEPEND=""
+
+MY_S="${S}/${P}"
+
+src_unpack() {
+#	git clone /home/felix/projects/tyn/qui .
+	cp -r /home/felix/projects/tyn/qui/* .
+}
+
+src_compile() {
+#	cd ${MY_S}
+	lmake CC=i386-pc-tyndur-gcc || die "make failed"
+	cd ..
+}
+
+src_install() {
+	cd ${MY_S}
+
+	lmake install INSTALL_TO="${D}${R}" || die "make install failed"
+	rm -rf ${D}${R}/share
+}

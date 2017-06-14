@@ -7,37 +7,23 @@
 #include <types.h>
 #include <unistd.h>
 
+#include <SDL/SDL.h>
+
 driver_context_t* graphics;
 video_bitmap_t *frontbuffer;
+
+void video_init();
 
 int main(int argc, char** argv)
 {
 	// Write to serial out instead of vconsole
 	stdout = NULL;
 	
-	graphics = libvideo_create_driver_context("vesa");
-	if (!graphics)
-	{
-			fprintf(stderr, "Failed to create driver context!\n");
-			return EXIT_FAILURE;
-	}
-	libvideo_use_driver_context(graphics);
-	libvideo_get_command_buffer(1024);
-
-	libvideo_change_device(0);
+	/*if(SDL_Init(SDL_INIT_EVERYTHING) < 0) {*/
+		/*printf("Failed to initialize SDL: %s\n", SDL_GetError());*/
+	/*}*/
 	
-	// Somehow this is necessary before setting video mode!
-	libvideo_do_command_buffer();
-
-	if (libvideo_change_display_resolution(0, 1024, 768, 24))
-	{
-			printf("Failed to set video mode!\n");
-			return EXIT_FAILURE;
-	}
-
-	frontbuffer = libvideo_get_frontbuffer_bitmap(0);
-	libvideo_request_backbuffers(frontbuffer, 2);
-	libvideo_change_target(frontbuffer);
+	video_init();
 
 	while (1) {
 		// CLEAR
@@ -61,4 +47,31 @@ int main(int argc, char** argv)
 		libvideo_flip_buffers(frontbuffer);
 	}
 	return 0;
+}
+
+void video_init()
+{
+	graphics = libvideo_create_driver_context("vesa");
+	if (graphics == NULL)
+	{
+			fprintf(stderr, "Failed to create driver context!\n");
+			exit(EXIT_FAILURE);
+	}
+	libvideo_use_driver_context(graphics);
+	libvideo_get_command_buffer(1024);
+
+	libvideo_change_device(0);
+	
+	// Somehow this is necessary before setting video mode!
+	libvideo_do_command_buffer();
+
+	if (libvideo_change_display_resolution(0, 1024, 768, 24))
+	{
+			printf("Failed to set video mode!\n");
+			exit(EXIT_FAILURE);
+	}
+
+	frontbuffer = libvideo_get_frontbuffer_bitmap(0);
+	libvideo_request_backbuffers(frontbuffer, 2);
+	libvideo_change_target(frontbuffer);
 }
