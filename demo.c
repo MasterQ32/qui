@@ -31,7 +31,7 @@ int main(int argc, char ** argv)
 		for(int i = 0; i < 256; i++)
 		{
 			for(int y = 0; y < window->height; y++) {
-				window->frameBuffer[window->width * y + ((anim + i) % window->width)] = RGB(0, i, 0);
+				window->frameBuffer[window->width * y + ((anim + i) % window->width)] = RGB(i, i, 0);
 			}
 		}
 

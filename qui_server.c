@@ -141,9 +141,9 @@ void svcWindowCreate(pid_t client, uint32_t correlation_id, size_t size, void *a
 		window->width,
 		window->height,
 		32,
-		0x000000FF,
-		0x0000FF00,
 		0x00FF0000,
+		0x0000FF00,
+        0x000000FF,
 	    0xFF000000);
 
 	printf("SERVER: Created window %d×%d, %d, %p, %p\n",
@@ -348,11 +348,29 @@ int main(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
 
-	backbuffer = SDL_SetVideoMode(1024, 768, 24, 0);
-	if(backbuffer == NULL) {
+	SDL_Surface * screen = SDL_SetVideoMode(1024, 768, 24, 0);
+	if(screen == NULL) {
 		printf("Failed to open video: %s\n", SDL_GetError());
 		exit(EXIT_FAILURE);
 	}
+
+	printf("Screen Info:\n");
+	printf("\tResolution: %d×%d\n", screen->w, screen->h);
+	printf("\tBPP:        %d\n", screen->format->BitsPerPixel);
+	printf("\tEncoding:   R=%x G=%x B=%x A=%x\n",
+		   screen->format->Rmask,
+	       screen->format->Gmask,
+	       screen->format->Bmask,
+	       screen->format->Amask);
+
+
+	backbuffer = SDL_CreateRGBSurface(
+		0,
+		screen->w, screen->h, screen->format->BitsPerPixel,
+		screen->format->Rmask,
+		screen->format->Gmask,
+		screen->format->Bmask,
+		screen->format->Amask);
 
 	skin = IMG_Load("skin.png");
 	if(skin == NULL) {
@@ -413,10 +431,10 @@ int main(int argc, char** argv)
 			{
 				mouseX = e.motion.x;
 				mouseY = e.motion.y;
-				dirty = true;
 				if(draggedWindow != NULL) {
 					draggedWindow->left += e.motion.xrel;
 					draggedWindow->top += e.motion.yrel;
+					dirty = true;
 				}
 			}
 		}
@@ -430,7 +448,7 @@ int main(int argc, char** argv)
 		}
 
 		if(dirty) {
-			// Clear screen
+			// Clear backbuffer
 			SDL_FillRect(backbuffer, NULL, SDL_MapRGB(backbuffer->format, 0, 0x80, 0x80));
 
 			// Draw window!
@@ -438,20 +456,24 @@ int main(int argc, char** argv)
 				renderWindow(it);
 			}
 
-			SDL_BlitSurface(
-				cursor,
-				NULL,
-				backbuffer,
-				&((SDL_Rect){
-					mouseX, mouseY,
-					16, 24
-				}));
-
-			// Render everything
-			SDL_Flip(backbuffer);
-
 			dirty = false;
 		}
+
+		// "Clear"
+		SDL_BlitSurface(backbuffer, NULL, screen, NULL);
+
+		// Cursor
+		SDL_BlitSurface(
+			cursor,
+			NULL,
+			screen,
+			&((SDL_Rect){
+				mouseX, mouseY,
+				16, 24
+			}));
+
+		// Render everything
+		SDL_Flip(screen);
 
 		// SDL_Delay(10);
 		yield();

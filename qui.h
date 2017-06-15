@@ -3,8 +3,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define RGB(r,g,b) ( (((r)&0xFFUL)<<0) | (((g)&0xFFUL)<<8) | (((b)&0xFFUL)<<16) | 0xFF000000UL )
-#define RGBA(r,g,b,a) ( (((r)&0xFFUL)<<0) | (((g)&0xFFUL)<<8) | (((b)&0xFFUL)<<16) |  (((a)&0xFFUL)<<24) )
+#define RGB(r,g,b) ( (((r)&0xFFUL)<<16) | (((g)&0xFFUL)<<8) | (((b)&0xFFUL)<<0) | 0xFF000000UL )
+#define RGBA(r,g,b,a) ( (((r)&0xFFUL)<<16) | (((g)&0xFFUL)<<8) | (((b)&0xFFUL)<<0) |  (((a)&0xFFUL)<<24) )
 
 typedef uint32_t color_t;
 
