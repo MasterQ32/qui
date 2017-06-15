@@ -5,6 +5,7 @@
 #include <sleep.h>
 
 #include <SDL/SDL_image.h>
+#include <init.h>
 
 #include "qui.h"
 
@@ -23,7 +24,6 @@ int main(int argc, char ** argv)
 		exit(EXIT_FAILURE);
 	}
 
-	int posX = window->width / 2, posY = window->height / 2;
 	bool requiresPaint = true; // Initially, draw a frame!
 	bool requiresQuit = false;
 	bool dragging = false;
@@ -35,21 +35,26 @@ int main(int argc, char ** argv)
 				case SDL_QUIT:
 					requiresQuit = true;
 					break;
-				case SDL_MOUSEBUTTONDOWN:
-					posX = e.button.x;
-					posY = e.button.y;
-					requiresPaint = true;
-					dragging = true;
-					break;
-				case SDL_MOUSEMOTION:
-					if(dragging) {
-						posX = e.button.x;
-						posY = e.button.y;
-						requiresPaint = true;
+				case SDL_KEYDOWN:
+					printf("Key down: %d, '%c'\n", e.key.keysym.sym, e.key.keysym.unicode);
+					if(e.key.keysym.sym == SDLK_e) {
+						const char * args[] = {
+							NULL,
+						};
+						init_execv("dora", args);
 					}
-					break;
-				case SDL_MOUSEBUTTONUP:
-					dragging = false;
+					else if(e.key.keysym.sym == SDLK_f) {
+						const char * args[] = {
+							NULL,
+						};
+						init_execv("fontdemo", args);
+					}
+					else if(e.key.keysym.sym == SDLK_d) {
+						const char * args[] = {
+							NULL,
+						};
+						init_execv("demo", args);
+					}
 					break;
 			}
 		}
@@ -62,20 +67,7 @@ int main(int argc, char ** argv)
 			// Clear window
 			qui_clearWindow(window, RGBA(0, 0, 0, 0));
 
-			for(int i = -10; i <= 10; i++)
-			{
-				int x, y;
-				x = posX + i;
-				y = posY;
-				if(x >= 0 && y >= 0 && x < window->width && y < window->width) {
-					window->frameBuffer[y * window->width + x] = RGB(255, 0, 0);
-				}
-				x = posX;
-				y = posY + i;
-				if(x >= 0 && y >= 0 && x < window->width && y < window->width) {
-					window->frameBuffer[y * window->width + x] = RGB(255, 0, 0);
-				}
-			}
+
 
 			// Send the graphics to the "server"
 			qui_updateWindow(window);

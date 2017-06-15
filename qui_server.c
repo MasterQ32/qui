@@ -13,16 +13,15 @@
 #include <rpc.h>
 #include <init.h>
 #include <syscall.h>
+#include <sys/wait.h>
 
 #include "qui.h"
 #include "quidata.h"
 
-#define STR(x) #x
-#define XSTR(x) STR(x)
-#define TRACE_BEGIN() printf("SERVER: → %s()\n", __func__);
-#define TRACE_END()   printf("SERVER: ← %s()\n", __func__);
-
 #define WF_DIRTY (1<<0)
+
+// #define TRACE(text) printf("%s:%d (%s): %s\n", __FILE__, __LINE__, __func__, #text);
+#define TRACE(text)
 
 struct window
 {
@@ -216,7 +215,6 @@ SDL_Surface * skin;
 
 void renderWindow(struct window * window)
 {
-	TRACE_BEGIN();
 	if(backbuffer == NULL || skin == NULL) {
 		return;
 	}
@@ -257,8 +255,13 @@ void renderWindow(struct window * window)
 		target.x, target.y,
 		4, 22
 	};
-	SDL_BlitSurface(skin, &src, backbuffer, &rect);
 
+	TRACE(Blit top left);
+	if(rect.x < backbuffer->w && rect.y < backbuffer->h) {
+		SDL_BlitSurface(skin, &src, backbuffer, &rect);
+	}
+
+	TRACE(Blit horizontal borders);
 	for(int i = 4; i < (target.w - 22); i += 22)
 	{
 		src = (SDL_Rect) {
@@ -273,10 +276,14 @@ void renderWindow(struct window * window)
 		{
 			rect.w = target.w - i;
 		}
-		SDL_BlitSurface(skin, &src, backbuffer, &rect);
+		if(rect.x < backbuffer->w && rect.y < backbuffer->h) {
+			SDL_BlitSurface(skin, &src, backbuffer, &rect);
+		}
 		rect.y = target.y + target.h - 3;
 		src.y = 41;
-		SDL_BlitSurface(skin, &src, backbuffer, &rect);
+		if(rect.x < backbuffer->w && rect.y < backbuffer->h) {
+			SDL_BlitSurface(skin, &src, backbuffer, &rect);
+		}
 	}
 
 	src = (SDL_Rect) {
@@ -287,8 +294,9 @@ void renderWindow(struct window * window)
 		target.x + target.w - 22, target.y,
 		4, 22
 	};
-	SDL_BlitSurface(skin, &src, backbuffer, &rect);
-
+    if(rect.x < backbuffer->w && rect.y < backbuffer->h) {
+		SDL_BlitSurface(skin, &src, backbuffer, &rect);
+	}
 	src = (SDL_Rect) {
 		0, 41,
 		4, 3
@@ -297,7 +305,9 @@ void renderWindow(struct window * window)
 		target.x, target.y + target.h - 3,
 		4, 3
 	};
-	SDL_BlitSurface(skin, &src, backbuffer, &rect);
+	if(rect.x < backbuffer->w && rect.y < backbuffer->h) {
+		SDL_BlitSurface(skin, &src, backbuffer, &rect);
+	}
 
 	src = (SDL_Rect) {
 		34, 41,
@@ -307,8 +317,12 @@ void renderWindow(struct window * window)
 		target.x + target.w - 22, target.y + target.h - 3,
 		4, 3
 	};
-	SDL_BlitSurface(skin, &src, backbuffer, &rect);
+	TRACE(Blit bottom right);
+	if(rect.x < backbuffer->w && rect.y < backbuffer->h) {
+		SDL_BlitSurface(skin, &src, backbuffer, &rect);
+	}
 
+	TRACE(Blit vertical borders);
 	for(int i = 22; i < (target.h - 3); i += rect.h)
 	{
 		src = (SDL_Rect) {
@@ -327,19 +341,23 @@ void renderWindow(struct window * window)
 
 		src.x = 0;
 		rect.x = target.x;
-		SDL_BlitSurface(skin, &src, backbuffer, &rect);
+		if(rect.x < backbuffer->w && rect.y < backbuffer->h) {
+			SDL_BlitSurface(skin, &src, backbuffer, &rect);
+		}
 		src.x = 53;
 		rect.x = target.x + target.w - 3;
-		SDL_BlitSurface(skin, &src, backbuffer, &rect);
+		if(rect.x < backbuffer->w && rect.y < backbuffer->h) {
+			SDL_BlitSurface(skin, &src, backbuffer, &rect);
+		}
 	}
 
 	rect = getClientRect(window);
+	TRACE(Blit content);
 	SDL_BlitSurface(
 		window->surface,
 		NULL,
 		backbuffer,
 		&rect);
-	TRACE_END();
 }
 
 void forwardEvent(SDL_Event event, struct window * target)
@@ -347,17 +365,17 @@ void forwardEvent(SDL_Event event, struct window * target)
 	if(target == NULL) {
 		return;
 	}
-	SDL_Rect rect = getWindowRect(target);
+	SDL_Rect rect = getClientRect(target);
 	switch(event.type)
 	{
 		case SDL_MOUSEBUTTONDOWN:
 		case SDL_MOUSEBUTTONUP:
-			event.button.x -= (rect.x + 2);
-			event.button.y -= (rect.y - 22);
+			event.button.x -= rect.x;
+			event.button.y -= rect.y;
 			break;
 		case SDL_MOUSEMOTION:
-			event.motion.x -= (rect.x + 2);
-			event.motion.y -= (rect.y - 22);
+			event.motion.x -= rect.x;
+			event.motion.y -= rect.y;
 			break;
 	}
 
@@ -428,6 +446,12 @@ int main(int argc, char** argv)
 	register_message_handler(MSG_WINDOW_DESTROY, svcWindowDestroy);
 	register_message_handler(MSG_WINDOW_UPDATE, svcWindowUpdate);
 
+	// Start dora!
+	const char * args[] = {
+		NULL,
+	};
+	pid_t dora_id = init_execv("dora", args);
+
 	SDL_Event e;
 	bool quit = false;
 	int mouseX = 0, mouseY = 0;
@@ -435,6 +459,12 @@ int main(int argc, char** argv)
 	struct window * draggedWindow = NULL;
 	while(!quit)
 	{
+		int status;
+		if(get_parent_pid(dora_id) == 0) {
+			// Stop the beat!
+			break;
+		}
+
 		while(SDL_PollEvent(&e))
 		{
 			if(e.type == SDL_QUIT) quit = true;
@@ -452,10 +482,26 @@ int main(int argc, char** argv)
 						&& (e.button.x <= target.x + target.w - 3)
 						&& (e.button.y >= target.y + 3)
 						&& (e.button.y <= target.y + 21);
-					if(dragging) {
+					bool closing = (e.button.x >= target.x + target.w - 20)
+					        && (e.button.x < target.x + target.w - 5)
+					        && (e.button.y >= target.y + 5)
+					        && (e.button.y < target.y + 19);
+					if(closing) {
+						removeWindow(clicked);
+
+						SDL_Event killEvent;
+						killEvent.type = SDL_QUIT;
+
+						forwardEvent(killEvent, clicked);
+						eatEvent = true;
+						if(draggedWindow == clicked) {
+							draggedWindow = NULL;
+						}
+
+					} else if(dragging) {
 						draggedWindow = clicked;
-						dirty = true;
 					}
+					dirty = true;
 				}
 			}
 			if(e.type == SDL_MOUSEBUTTONUP) {
@@ -483,7 +529,6 @@ int main(int argc, char** argv)
 					case SDL_MOUSEBUTTONDOWN:
 					case SDL_MOUSEBUTTONUP:
 						eatEvent |= !rectContains(&client, e.button.x, e.button.y);
-
 						break;
 				}
 				if(eatEvent == false) {
