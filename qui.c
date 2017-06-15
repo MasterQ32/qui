@@ -5,11 +5,28 @@
 #include <rpc.h>
 #include <stdlib.h>
 
+struct eventmsg
+{
+	SDL_Event event;
+	struct eventmsg * next;
+};
+
 static pid_t svc = 0;
+
+static struct eventmsg * messageQueue = NULL;
+static struct eventmsg * messageQueueTop = NULL;
+
+void cliReceiveEvent(pid_t server, uint32_t correlation_id, size_t size, void *args);
 
 bool qui_open()
 {
+	if(svc != 0) {
+		return true;
+	}
 	svc = init_service_get("gui");
+	if(svc != 0) {
+		register_message_handler(MSG_WINDOW_EVENT, cliReceiveEvent);
+	}
 	return (svc != 0);
 }
 
@@ -98,4 +115,48 @@ void qui_destroyWindow(window_t * window)
 	// TODO: Use result!
 
 	free(window);
+}
+
+bool qui_fetchEvent(SDL_Event * event)
+{
+	*event = ((SDL_Event) { 0 });
+
+	if(messageQueue == NULL) {
+		return false;
+	}
+
+	p();
+	struct eventmsg * msg = messageQueue;
+	messageQueue = messageQueue->next;
+	if(messageQueue == NULL) {
+		messageQueueTop = NULL;
+	}
+	v();
+
+	*event = msg->event;
+	free(msg);
+
+	return true;
+}
+
+void cliReceiveEvent(pid_t server, uint32_t correlation_id, size_t size, void *args)
+{
+	SDL_Event * event = args;
+
+	p();
+	struct eventmsg * it = malloc(sizeof(struct eventmsg));
+	it->event = *event;
+	it->next = NULL;
+
+	if(messageQueueTop == NULL) {
+		messageQueue = it;
+		messageQueueTop = it;
+	} else {
+		messageQueueTop->next = it;
+		messageQueueTop = it;
+	}
+
+	v();
+
+	rpc_send_dword_response(server, correlation_id, 0);
 }

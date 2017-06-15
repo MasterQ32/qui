@@ -22,25 +22,40 @@ int main(int argc, char ** argv)
 	}
 
 	int anim = 0;
-	while(true)
+	bool requiresPaint = true; // Initially, draw a frame!
+	bool requiresQuit = false;
+	while(requiresQuit == false)
 	{
-		// Clear window
-		qui_clearWindow(window, RGBA(0, 0, 0, 0));
-
-		// Draw some stuff here
-		for(int i = 0; i < 256; i++)
-		{
-			for(int y = 0; y < window->height; y++) {
-				window->frameBuffer[window->width * y + ((anim + i) % window->width)] = RGB(i, i, 0);
+		SDL_Event e;
+		while(qui_fetchEvent(&e)) {
+			printf("CLIENT: Received event %d\n", e.type);
+			switch(e.type) {
+				case SDL_QUIT:
+					requiresQuit = true;
+					break;
 			}
 		}
 
-		// Send the graphics to the "server"
-		qui_updateWindow(window);
+		if(requiresPaint && !requiresQuit) {
+			// Clear window
+			qui_clearWindow(window, RGBA(0, 0, 0, 0));
+
+			// Draw some stuff here
+			for(int i = 0; i < 256; i++)
+			{
+				for(int y = 0; y < window->height; y++) {
+					window->frameBuffer[window->width * y + ((anim + i) % window->width)] = RGB(i, i, 0);
+				}
+			}
+
+			// Send the graphics to the "server"
+			qui_updateWindow(window);
+			requiresPaint = false;
+		}
 
 		++anim;
 
-		sleep(1);
+		wait_for_rpc();
 	}
 
 	qui_destroyWindow(window);

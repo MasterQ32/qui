@@ -33,6 +33,7 @@ struct window
 	int top, left;
 	SDL_Surface * surface;
 	int flags;
+	pid_t creator;
 };
 
 struct window * top = NULL;
@@ -46,12 +47,28 @@ SDL_Rect getWindowRect(struct window * window) {
 	};
 };
 
+SDL_Rect getClientRect(struct window * window) {
+	return (SDL_Rect) {
+		   window->left + 2, window->top + 22,
+		   window->width, window->height,
+	};
+}
+
+bool rectContains(SDL_Rect const * rect, int x, int y) {
+	if(x < rect->x || y < rect->y) {
+		return false;
+	}
+	if(x >= (rect->x + rect->w) || y >= (rect->y + rect->h)) {
+		return false;
+	}
+	return true;
+}
+
 struct window * getWindow(uint32_t id)
 {
 	// TODO: Lock here!
 	for(struct window * win = bottom; win != NULL; win = win->next) {
 		if(win->membuf == id) {
-			v();
 			return win;
 		}
 	}
@@ -60,7 +77,6 @@ struct window * getWindow(uint32_t id)
 
 void insertWindow(struct window * win)
 {
-	TRACE_BEGIN();
 	if(top != NULL) {
 		top->next = win;
 		win->previous = top;
@@ -69,12 +85,10 @@ void insertWindow(struct window * win)
 		top = win;
 		bottom = win;
 	}
-	TRACE_END();
 }
 
 void removeWindow(struct window * win)
 {
-	TRACE_BEGIN();
 	if(win->previous != NULL) {
 		win->previous->next = win->next;
 	}
@@ -89,35 +103,23 @@ void removeWindow(struct window * win)
 	}
 	win->next = NULL;
 	win->previous = NULL;
-	TRACE_END();
 }
 
 void bringToFront(struct window * window)
 {
-	TRACE_BEGIN();
-
 	// This will move the window to the front of the list
 	removeWindow(window);
 	insertWindow(window);
-
-	TRACE_END();
 }
 
 struct window * getWindowByPosition(int x, int y)
 {
-	TRACE_BEGIN();
 	for(struct window * win = top; win != NULL; win = win->previous) {
 		SDL_Rect rect = getWindowRect(win);
-		if(x < rect.x || y < rect.y) {
-			continue;
+		if(rectContains(&rect, x, y)) {
+			return win;
 		}
-		if(x >= (rect.x + rect.w) || y >= (rect.y + rect.h)) {
-			continue;
-		}
-		TRACE_END();
-		return win;
 	}
-	TRACE_END();
 	return NULL;
 }
 
@@ -133,6 +135,7 @@ void svcWindowCreate(pid_t client, uint32_t correlation_id, size_t size, void *a
 	window->height = req->height;
 	window->previous = NULL;
 	window->next = NULL;
+	window->creator = client;
 	window->membuf = create_shared_memory(
 		sizeof(color_t) * window->width * window->height);
 	window->framebuffer = open_shared_memory(window->membuf);
@@ -171,6 +174,12 @@ void svcWindowDestroy(pid_t client, uint32_t correlation_id, size_t size, void *
 		return;
 	}
 
+	if(client != window->creator) {
+		// Window access violation!
+		rpc_send_int_response(client, correlation_id, 1);
+		return;
+	}
+
 	removeWindow(window);
 
 	printf("SERVER: Destroyed window %d\n", window->membuf);
@@ -187,6 +196,11 @@ void svcWindowUpdate(pid_t client, uint32_t correlation_id, size_t size, void * 
 	uint32_t wid = *((uint32_t*)args);
 	struct window * window = getWindow(wid);
 	if(window == NULL) {
+		rpc_send_int_response(client, correlation_id, 1);
+		return;
+	}
+	if(client != window->creator) {
+		// Window access violation!
 		rpc_send_int_response(client, correlation_id, 1);
 		return;
 	}
@@ -319,10 +333,7 @@ void renderWindow(struct window * window)
 		SDL_BlitSurface(skin, &src, backbuffer, &rect);
 	}
 
-	rect = (SDL_Rect) {
-		target.x + 2, target.y + 22,
-		window->width, window->height,
-	};
+	rect = getClientRect(window);
 	SDL_BlitSurface(
 		window->surface,
 		NULL,
@@ -330,6 +341,31 @@ void renderWindow(struct window * window)
 		&rect);
 	TRACE_END();
 }
+
+void forwardEvent(SDL_Event event, struct window * target)
+{
+	if(target == NULL) {
+		return;
+	}
+	SDL_Rect rect = getWindowRect(target);
+	switch(event.type)
+	{
+		case SDL_MOUSEBUTTONDOWN:
+		case SDL_MOUSEBUTTONUP:
+			event.button.x -= (rect.x + 2);
+			event.button.y -= (rect.y - 22);
+			break;
+		case SDL_MOUSEMOTION:
+			event.motion.x -= (rect.x + 2);
+			event.motion.y -= (rect.y - 22);
+			break;
+	}
+
+	rpc_get_dword(target->creator, MSG_WINDOW_EVENT, sizeof(event), (char*)&event);
+}
+
+// The top-most window is always focused!
+struct window * getFocus() { return top; }
 
 int main(int argc, char** argv)
 {
@@ -404,14 +440,13 @@ int main(int argc, char** argv)
 			if(e.type == SDL_QUIT) quit = true;
 			if(e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE) quit = true;
 
+			bool eatEvent = false;
 			if(e.type == SDL_MOUSEBUTTONDOWN) {
 				struct window * clicked = getWindowByPosition(
 					e.button.x,
 					e.button.y);
 				if(clicked != NULL) {
-
 					bringToFront(clicked);
-
 					SDL_Rect target = getWindowRect(clicked);
 					bool dragging = (e.button.x >= target.x + 2)
 						&& (e.button.x <= target.x + target.w - 3)
@@ -421,7 +456,6 @@ int main(int argc, char** argv)
 						draggedWindow = clicked;
 						dirty = true;
 					}
-					// TODO: Transport event to client!
 				}
 			}
 			if(e.type == SDL_MOUSEBUTTONUP) {
@@ -435,6 +469,25 @@ int main(int argc, char** argv)
 					draggedWindow->left += e.motion.xrel;
 					draggedWindow->top += e.motion.yrel;
 					dirty = true;
+				}
+			}
+
+			struct window * focus = getFocus();
+
+			if(focus != NULL) {
+				SDL_Rect client = getClientRect(focus);
+				switch(e.type) {
+					case SDL_MOUSEMOTION:
+						eatEvent |= !rectContains(&client, e.motion.x, e.motion.y);
+						break;
+					case SDL_MOUSEBUTTONDOWN:
+					case SDL_MOUSEBUTTONUP:
+						eatEvent |= !rectContains(&client, e.button.x, e.button.y);
+
+						break;
+				}
+				if(eatEvent == false) {
+					forwardEvent(e, focus);
 				}
 			}
 		}

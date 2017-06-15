@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <SDL/SDL.h>
 
 #define RGB(r,g,b) ( (((r)&0xFFUL)<<16) | (((g)&0xFFUL)<<8) | (((b)&0xFFUL)<<0) | 0xFF000000UL )
 #define RGBA(r,g,b,a) ( (((r)&0xFFUL)<<16) | (((g)&0xFFUL)<<8) | (((b)&0xFFUL)<<0) |  (((a)&0xFFUL)<<24) )
@@ -26,3 +27,5 @@ void qui_clearWindow(window_t * window, color_t color);
 void qui_updateWindow(window_t * window);
 
 void qui_destroyWindow(window_t * window);
+
+bool qui_fetchEvent(SDL_Event * event);

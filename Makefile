@@ -14,7 +14,9 @@ qui_server: qui_server.c
 		-L$(WORKDIR)/env/lib
 
 demo: demo.c qui.c qui.h
-	$(BCC) demo -std=c99 -I include demo.c qui.c
+	$(BCC) demo -std=c99 -I include demo.c qui.c -lSDL_image -lSDL  -lpng  -ljpeg -lz \
+	-I$(WORKDIR)/env/include \
+	-L$(WORKDIR)/env/lib
 
 clean:
 	-$(RM) qui demo

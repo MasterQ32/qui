@@ -4,6 +4,7 @@
 #define MSG_WINDOW_CREATE  "WNCREATE"
 #define MSG_WINDOW_DESTROY "WNDESTRO"
 #define MSG_WINDOW_UPDATE  "WNUPDATE"
+#define MSG_WINDOW_EVENT   "WNEVENT"
 
 struct wincreate_req
 {
