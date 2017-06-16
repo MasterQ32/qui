@@ -64,8 +64,9 @@ int main(int argc, char ** argv)
 		}
 
 		if(requiresPaint && !requiresQuit) {
+			bitmap_t * surface = qui_getWindowSurface(window);
 			// Clear window
-			qui_clearWindow(window, RGBA(0, 0, 0, 0));
+			qui_clearBitmap(surface, RGBA(0, 0, 0, 0));
 
 
 

@@ -10,12 +10,10 @@
 
 void tfput(int x, int y, void *arg)
 {
-	window_t * window = arg;
-	if(x < 0 || y < 0 || x >= window->width || y >= window->height)
+	bitmap_t * surface = arg;
+	if(x < 0 || y < 0 || x >= surface->width || y >= surface->height)
 		return;
-	window->frameBuffer[
-		y * window->width +
-	    x] = RGB(0, 0, 0);
+	PIXREF(surface, x, y) = RGB(0, 0, 0);
 }
 
 struct glyph
@@ -111,7 +109,6 @@ int main(int argc, char ** argv)
 		printf("Failed to create window!\n");
 		exit(EXIT_FAILURE);
 	}
-	tfont_setPainter(&tfput, window);
 
 	int anim = 0;
 	bool requiresPaint = true; // Initially, draw a frame!
@@ -132,8 +129,11 @@ int main(int argc, char ** argv)
 		}
 
 		if(requiresPaint && !requiresQuit) {
+			bitmap_t * surface = qui_getWindowSurface(window);
+			tfont_setPainter(&tfput, surface);
+
 			// Clear window
-			qui_clearWindow(window, RGBA(0, 0, 0, 0));
+			qui_clearBitmap(surface, RGBA(0, 0, 0, 0));
 
 			int x = 8;
 			int y = 8 + tfont_getSize();

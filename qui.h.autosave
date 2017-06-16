@@ -52,7 +52,7 @@ bitmap_t * qui_loadBitmap(char const * fileName);
 
 void qui_destroyBitmap(bitmap_t * bitmap);
 
-void qui_clearBitmap(bitmap_t * window, color_t color);
+void qui_clearBitmap(bitmap_t * bitmap, color_t color);
 
 void qui_blitBitmap(bitmap_t * src, bitmap_t * dest, int x, int y);
 

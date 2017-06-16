@@ -59,21 +59,22 @@ int main(int argc, char ** argv)
 		}
 
 		if(requiresPaint && !requiresQuit) {
+			bitmap_t * surface = qui_getWindowSurface(window);
 			// Clear window
-			qui_clearWindow(window, RGBA(0, 0, 0, 0));
+			qui_clearBitmap(surface, RGBA(0, 0, 0, 0));
 
 			for(int i = -10; i <= 10; i++)
 			{
 				int x, y;
 				x = posX + i;
 				y = posY;
-				if(x >= 0 && y >= 0 && x < window->width && y < window->width) {
-					window->frameBuffer[y * window->width + x] = RGB(255, 0, 0);
+				if(x >= 0 && y >= 0 && x < surface->width && y < surface->width) {
+					PIXREF(surface, x, y) = RGB(255, 0, 0);
 				}
 				x = posX;
 				y = posY + i;
-				if(x >= 0 && y >= 0 && x < window->width && y < window->width) {
-					window->frameBuffer[y * window->width + x] = RGB(255, 0, 0);
+				if(x >= 0 && y >= 0 && x < surface->width && y < surface->width) {
+					PIXREF(surface, x, y) = RGB(255, 0, 0);
 				}
 			}
 
