@@ -172,7 +172,7 @@ bitmap_t * qui_getWindowSurface(window_t * window)
 	return bmp;
 }
 
-bitmap_t * qui_newBitmap(uint32_t width, uint32_t height)
+bitmap_t * qui_createBitmap(uint32_t width, uint32_t height)
 {
 	if(width == 0 || height == 0) {
 		return NULL;
@@ -245,7 +245,7 @@ bitmap_t * qui_loadBitmap(char const * fileName)
 
 	fclose(fp);
 
-	bitmap_t * bitmap = qui_newBitmap(width, height);
+	bitmap_t * bitmap = qui_createBitmap(width, height);
 
 	if(bitmap != NULL) {
 		for(int y = 0; y < height; y++) {

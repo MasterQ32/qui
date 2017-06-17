@@ -22,7 +22,7 @@ int main(int argc, char ** argv)
 		exit(EXIT_FAILURE);
 	}
 
-	bitmap_t * greenQuad = qui_newBitmap(32, 32);
+	bitmap_t * greenQuad = qui_createBitmap(32, 32);
 	qui_clearBitmap(greenQuad, RGBA(0, 255, 0, 128));
 
 	int posX = window->width / 2, posY = window->height / 2;

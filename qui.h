@@ -69,7 +69,7 @@ bitmap_t * qui_getWindowSurface(window_t * window);
  * @param height The vertical size of the bitmap
  * @return The bitmap that was created or NULL on failure.
  */
-bitmap_t * qui_newBitmap(uint32_t width, uint32_t height);
+bitmap_t * qui_createBitmap(uint32_t width, uint32_t height);
 
 bitmap_t * qui_loadBitmap(char const * fileName);
 
