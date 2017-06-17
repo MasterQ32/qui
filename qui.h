@@ -71,6 +71,11 @@ bitmap_t * qui_getWindowSurface(window_t * window);
  */
 bitmap_t * qui_createBitmap(uint32_t width, uint32_t height);
 
+/**
+ * @brief Loads a PNG file and returns a bitmap containing the image.
+ * @param fileName The file name of the PNG file.
+ * @return A bitmap containing the loaded image.
+ */
 bitmap_t * qui_loadBitmap(char const * fileName);
 
 /**

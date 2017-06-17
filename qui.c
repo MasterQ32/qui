@@ -193,6 +193,9 @@ bitmap_t * qui_createBitmap(uint32_t width, uint32_t height)
 
 bitmap_t * qui_loadBitmap(char const * fileName)
 {
+	if(fileName == NULL) {
+		return NULL;
+	}
 	char header[8];    // 8 is the maximum size that can be checked
 
 	// open file and test for it being a png
@@ -201,28 +204,37 @@ bitmap_t * qui_loadBitmap(char const * fileName)
 		return NULL;
 	}
 	fread(header, 1, 8, fp);
-	if (png_sig_cmp(header, 0, 8))
-		abort();
+	if (png_sig_cmp(header, 0, 8)) {
+		fclose(fp);
+		return NULL;
+	}
 
 
 	// initialize stuff
 	png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 
-	if (png_ptr == NULL)
-		abort();
+	if (png_ptr == NULL) {
+		fclose(fp);
+		return NULL;
+	}
 
 	png_infop info_ptr = png_create_info_struct(png_ptr);
-	if (info_ptr == NULL)
-		abort();
+	if (info_ptr == NULL) {
+		png_destroy_read_struct(&png_ptr, NULL, NULL);
+		fclose(fp);
+		return NULL;
+	}
 
-	if (setjmp(png_jmpbuf(png_ptr)))
-		abort();
+	if (setjmp(png_jmpbuf(png_ptr))) {
+		png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+		fclose(fp);
+		return NULL;
+	}
 
 	png_init_io(png_ptr, fp);
 	png_set_sig_bytes(png_ptr, 8);
 
 	png_read_info(png_ptr, info_ptr);
-
 
 	int width = png_get_image_width(png_ptr, info_ptr);
 	int height = png_get_image_height(png_ptr, info_ptr);
@@ -233,8 +245,11 @@ bitmap_t * qui_loadBitmap(char const * fileName)
 	png_read_update_info(png_ptr, info_ptr);
 
 	// read file
-	if (setjmp(png_jmpbuf(png_ptr)))
-		abort();
+	if (setjmp(png_jmpbuf(png_ptr))) {
+		png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+		fclose(fp);
+		return NULL;
+	}
 
 	png_bytep * row_pointers = (png_bytep*) malloc(sizeof(png_bytep) * height);
 	for (int y = 0; y < height; y++) {
@@ -242,6 +257,8 @@ bitmap_t * qui_loadBitmap(char const * fileName)
 	}
 
 	png_read_image(png_ptr, row_pointers);
+
+	png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
 
 	fclose(fp);
 
