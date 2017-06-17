@@ -27,5 +27,5 @@ src_install() {
 	cd ${MY_S}
 
 	lmake install INSTALL_TO="${D}${R}" || die "make install failed"
-	rm -rf ${D}${R}/share
+#	rm -rf ${D}${R}/share
 }

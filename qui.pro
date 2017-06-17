@@ -8,16 +8,18 @@ DISTFILES += \
     ascii.tfn
 
 HEADERS += \
-    quidata.h \
-    qui.h \
-    tfont.h
+    include/quidata.h \
+    include/qui.h \
+    include/tfont.h
 
 SOURCES += \
-    qui_server.c \
-    qui.c \
-    demo.c \
-    tfont.c \
-    fontdemo.c \
-    dora.c
+    src/qui_server.c \
+    src/qui.c \
+    src/demo.c \
+    src/tfont.c \
+    src/fontdemo.c \
+    src/dora.c \
+    src/qterm.c
 
 INCLUDEPATH += "/home/felix/projects/tyn/lbuilds/env/include/"
+INCLUDEPATH += "$$PWD/include/"

@@ -1,4 +1,4 @@
-BCC = $(CC) $(CFLAGS) -O3 -g -std=c99 -I include -I$(WORKDIR)/env/include -L$(WORKDIR)/env/lib -o
+BCC = $(CC) $(CFLAGS) -O3 -DLBUILD_PACKAGE="\"${PN}\"" -g -std=c99 -I include -I$(WORKDIR)/env/include -L$(WORKDIR)/env/lib -o
 MV = mv
 RM = rm
 COPY = cp
@@ -7,20 +7,22 @@ CPTH = install -d
 .PHONY: all clean install
 
 all: qui_server demo fontdemo dora
+	echo "Name: ${PN}"
+	echo "Version: $(PV)"
 
-qui_server: qui_server.c
-	$(BCC) qui_server qui_server.c -lSDL_image -lSDL -lpng  -ljpeg -lz \
+qui_server: src/qui_server.c include/qui.h include/quidata.h
+	$(BCC) qui_server src/qui_server.c -lSDL_image -lSDL -lpng  -ljpeg -lz \
 		-I$(WORKDIR)/env/include \
 		-L$(WORKDIR)/env/lib
 
-demo: demo.c qui.c qui.h
-	$(BCC) $@ demo.c qui.c -lpng -lz
+demo: src/demo.c src/qui.c include/qui.h include/quidata.h
+	$(BCC) $@ src/demo.c src/qui.c -lpng -lz
 
-fontdemo: fontdemo.c qui.c qui.h tfont.c tfont.h
-	$(BCC) $@ fontdemo.c qui.c tfont.c -lpng -lz
+fontdemo: src/fontdemo.c src/qui.c include/qui.h src/tfont.c include/tfont.h include/quidata.h
+	$(BCC) $@ src/fontdemo.c src/qui.c src/tfont.c -lpng -lz
 
-dora: dora.c qui.c qui.h
-	$(BCC) $@ dora.c qui.c -lpng -lz
+dora: src/dora.c src/qui.c include/qui.h include/quidata.h
+	$(BCC) $@ src/dora.c src/qui.c -lpng -lz
 
 	
 clean:
@@ -28,8 +30,9 @@ clean:
 
 install:
 	$(CPTH) $(INSTALL_TO)/bin
-	$(CPTH) $(INSTALL_TO)/lib
-	$(COPY) qui_server demo fontdemo dora $(INSTALL_TO)/bin
+	$(CPTH) $(INSTALL_TO)/share
+	$(COPY) qui_server demo fontdemo dora $(INSTALL_TO)/bin/
+	$(COPY) data/* $(INSTALL_TO)/share/
 
-	$(COPY) qui_server demo fontdemo dora /home/felix/projects/tyn/tyndur/build/root-local/guiapps/
-	$(COPY) data/* /home/felix/projects/tyn/tyndur/build/root-local/guiapps/
+#	$(COPY) qui_server demo fontdemo dora /home/felix/projects/tyn/tyndur/build/root-local/guiapps/
+#	$(COPY) data/* /home/felix/projects/tyn/tyndur/build/root-local/guiapps/

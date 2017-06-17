@@ -7,7 +7,6 @@
 #include "qui.h"
 #include "tfont.h"
 
-
 void tfput(int x, int y, void *arg)
 {
 	bitmap_t * surface = arg;

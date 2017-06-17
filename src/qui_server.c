@@ -14,6 +14,7 @@
 #include <init.h>
 #include <syscall.h>
 #include <sys/wait.h>
+#include <kbd.h>
 
 #include "qui.h"
 #include "quidata.h"
@@ -382,15 +383,44 @@ void forwardEvent(SDL_Event event, struct window * target)
 	rpc_get_dword(target->creator, MSG_WINDOW_EVENT, sizeof(event), (char*)&event);
 }
 
+static pid_t kbc_pid;
+
+static void svnKeyboardCallback(pid_t pid, uint32_t cid, size_t data_size, void* data)
+{
+    uint8_t* kbd_data = data;
+
+    if ((pid != kbc_pid) || (data_size != 2)) {
+        return;
+    }
+
+	printf("Got keyhit: %d %d\n", kbd_data[0], kbd_data[1]);
+}
+
 // The top-most window is always focused!
 struct window * getFocus() { return top; }
 
 int main(int argc, char** argv)
 {
+//	// Initialize keyboard system
+//	kbc_pid = init_service_get("kbc");
+//	if(kbc_pid == 0) {
+//		printf("Failed to get keyboard service!\n");
+//		exit(EXIT_FAILURE);
+//	}
+//	register_message_handler(KBD_RPC_CALLBACK, svnKeyboardCallback);
+
+//	if(rpc_get_dword(kbc_pid, KBD_RPC_REGISTER_CALLBACK, 0, NULL) == 0) {
+//		printf("Failed to initialize keyboard callback!\n");
+//		exit(EXIT_FAILURE);
+//	}
+
+	// Initialize video
 	if(SDL_Init(SDL_INIT_VIDEO) < 0) {
 		printf("Failed to initialize SDL: %s\n", SDL_GetError());
 		exit(EXIT_FAILURE);
 	}
+
+	SDL_EnableUNICODE(1);
 
 	if(IMG_Init(IMG_INIT_PNG) < 0) {
 		printf("Failed to initialize IMG: %s\n", IMG_GetError());
@@ -424,13 +454,13 @@ int main(int argc, char** argv)
 		screen->format->Bmask,
 		screen->format->Amask);
 
-	skin = IMG_Load("/guiapps/skin.png");
+	skin = IMG_Load(QUI_RESOURCE("skin.png"));
 	if(skin == NULL) {
 		printf("Failed to open image: %s\n", IMG_GetError());
 		exit(EXIT_FAILURE);
 	}
 
-	SDL_Surface * cursor = IMG_Load("/guiapps/cursor.png");
+	SDL_Surface * cursor = IMG_Load(QUI_RESOURCE("cursor.png"));
 	if(cursor == NULL) {
 		printf("Failed to open image: %s\n", IMG_GetError());
 		exit(EXIT_FAILURE);
@@ -448,7 +478,7 @@ int main(int argc, char** argv)
 	const char * args[] = {
 		NULL,
 	};
-	pid_t dora_id = init_execv("file:/guiapps/dora", args);
+	pid_t dora_id = init_execv(QUI_ROOT "bin/dora", args);
 
 	SDL_Event e;
 	bool quit = false;

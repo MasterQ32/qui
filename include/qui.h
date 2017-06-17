@@ -4,6 +4,14 @@
 #include <stdint.h>
 #include <SDL/SDL.h>
 
+#ifndef LBUILD_PACKAGE
+#error LBUILD_PACKAGE must be defined!
+#endif
+
+#define QUI_ROOT "file:/packages/" LBUILD_PACKAGE "/"
+
+#define QUI_RESOURCE(filename) QUI_ROOT "share/" filename
+
 /**
  * @brief Bitmask that masks the red color component from a @ref color_t
  */
