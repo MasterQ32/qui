@@ -226,6 +226,9 @@ void read_png_file(char* file_name)
 
 bitmap_t * qui_getWindowSurface(window_t * window)
 {
+	if(window == NULL) {
+		return NULL;
+	}
 	bitmap_t value = {
 		.pixels = window->frameBuffer,
 		.width = window->width,
@@ -239,6 +242,9 @@ bitmap_t * qui_getWindowSurface(window_t * window)
 
 bitmap_t * qui_newBitmap(uint32_t width, uint32_t height)
 {
+	if(width == 0 || height == 0) {
+		return NULL;
+	}
 	bitmap_t value = {
 		.pixels = malloc(sizeof(color_t) * width * height),
 	    .width = width,
@@ -257,6 +263,9 @@ bitmap_t * qui_loadBitmap(char const * fileName);
 
 void qui_destroyBitmap(bitmap_t * bitmap)
 {
+	if(bitmap == NULL) {
+		return;
+	}
 	if((bitmap->flags & BMP_NOFREE) == 0) {
 		free(bitmap->pixels);
 	}
@@ -275,11 +284,65 @@ void qui_clearBitmap(bitmap_t * bitmap, color_t color)
 	}
 }
 
-void qui_blitBitmap(bitmap_t * src, bitmap_t * dest, int x, int y);
+void qui_blitBitmap(bitmap_t * src, bitmap_t * dest, int x, int y)
+{
+	qui_blitBitmapExt(src, 0, 0, dest, x, y, src->width, src->height);
+}
 
 void qui_blitBitmapExt(
 	bitmap_t * src,
-	bitmap_t * dest,
 	int srcX, int srcY,
+	bitmap_t * dest,
 	int destX, int destY,
-	int width, int height);
+	int width, int height)
+{
+	if(src == NULL || dest == NULL) {
+		return;
+	}
+	for(int y = 0; y < height; y++) {
+		for(int x = 0; x < width; x++) {
+			int sx = srcX + x;
+			int sy = srcY + y;
+			int dx = destX + x;
+			int dy = destY + y;
+			if(sx < 0 || sy < 0 || dx < 0 || dy < 0) {
+				continue;
+			}
+			if(sx >= src->width || sy >= src->height) {
+				continue;
+			}
+			if(dx >= dest->width || dy >= dest->width) {
+				continue;
+			}
+			color_t color = PIXREF(src, sx, sy);
+			if((color & COLOR_AMASK) == 0) {
+				// Alpha=0 is trivial
+				continue;
+			}
+
+			if((color & COLOR_AMASK) != COLOR_AMASK) {
+				// TODO: Implement fast and correct alpha blending
+				int alpha = (color >> COLOR_ASHIFT);
+
+				color_t dst = PIXREF(dest, dx, dy);
+				color_t src = color;
+
+				int sR = 0xFF & (src >> COLOR_RSHIFT);
+				int sG = 0xFF & (src >> COLOR_GSHIFT);
+				int sB = 0xFF & (src >> COLOR_BSHIFT);
+
+				int dR = 0xFF & (dst >> COLOR_RSHIFT);
+				int dG = 0xFF & (dst >> COLOR_GSHIFT);
+				int dB = 0xFF & (dst >> COLOR_BSHIFT);
+
+				PIXREF(dest, dx, dy) = RGB(
+					(alpha * sR + (255 - alpha) * dR) / 255,
+					(alpha * sG + (255 - alpha) * dG) / 255,
+					(alpha * sB + (255 - alpha) * dB) / 255);
+
+			} else {
+				PIXREF(dest, dx, dy) = color;
+			}
+		}
+	}
+}

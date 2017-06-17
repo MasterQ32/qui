@@ -18,7 +18,7 @@ int main(int argc, char ** argv)
 		exit(EXIT_FAILURE);
 	}
 
-	window_t * window = qui_createWindow(640, 480, 0);
+	window_t * window = qui_createWindow(64, 480, 0);
 	if(window == NULL) {
 		printf("Failed to create window!\n");
 		exit(EXIT_FAILURE);

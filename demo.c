@@ -23,6 +23,9 @@ int main(int argc, char ** argv)
 		exit(EXIT_FAILURE);
 	}
 
+	bitmap_t * greenQuad = qui_newBitmap(32, 32);
+	qui_clearBitmap(greenQuad, RGBA(0, 255, 0, 128));
+
 	int posX = window->width / 2, posY = window->height / 2;
 	bool requiresPaint = true; // Initially, draw a frame!
 	bool requiresQuit = false;
@@ -62,7 +65,6 @@ int main(int argc, char ** argv)
 			bitmap_t * surface = qui_getWindowSurface(window);
 			// Clear window
 			qui_clearBitmap(surface, RGBA(0, 0, 0, 0));
-
 			for(int i = -10; i <= 10; i++)
 			{
 				int x, y;
@@ -77,6 +79,8 @@ int main(int argc, char ** argv)
 					PIXREF(surface, x, y) = RGB(255, 0, 0);
 				}
 			}
+
+			qui_blitBitmap(greenQuad, surface, 32, 32);
 
 			// Send the graphics to the "server"
 			qui_updateWindow(window);
