@@ -4,52 +4,179 @@
 #include <stdint.h>
 #include <SDL/SDL.h>
 
+/**
+ * @brief Bitmask that masks the red color component from a @ref color_t
+ */
 #define COLOR_RMASK 0x00FF0000UL
+
+/**
+ * @brief Bitmask that masks the green color component from a @ref color_t
+ */
 #define COLOR_GMASK 0x0000FF00UL
+
+/**
+ * @brief Bitmask that masks the blue color component from a @ref color_t
+ */
 #define COLOR_BMASK 0x000000FFUL
+
+/**
+ * @brief Bitmask that masks the alpha component from a @ref color_t
+ */
 #define COLOR_AMASK 0xFF000000UL
 
+/**
+ * @brief The number of bits that is required to shift the red color component
+ *        to the right to align it with the LSB.
+ */
 #define COLOR_RSHIFT 16
+
+/**
+ * @brief The number of bits that is required to shift the green color component
+ *        to the right to align it with the LSB.
+ */
 #define COLOR_GSHIFT  8
+
+/**
+ * @brief The number of bits that is required to shift the blue color component
+ *        to the right to align it with the LSB.
+ */
 #define COLOR_BSHIFT  0
+
+/**
+ * @brief The number of bits that is required to shift the alpha component
+ *        to the right to align it with the LSB.
+ */
 #define COLOR_ASHIFT 24
 
+/**
+ * @brief Macro creating a @ref color_t value from rgb values.
+ * @param r the red component
+ * @param g the green component
+ * @param b the blue component
+ * @returns @ref color_t that contains the given color
+ */
 #define RGB(r,g,b) ( (((r)&0xFFUL)<<16) | (((g)&0xFFUL)<<8) | (((b)&0xFFUL)<<0) | 0xFF000000UL )
+
+/**
+ * @brief Macro creating a @ref color_t value from rgba values.
+ * @param r the red component
+ * @param g the green component
+ * @param b the blue component
+ * @param a the alpha component
+ * @returns @ref color_t that contains the given color
+ */
 #define RGBA(r,g,b,a) ( (((r)&0xFFUL)<<16) | (((g)&0xFFUL)<<8) | (((b)&0xFFUL)<<0) |  (((a)&0xFFUL)<<24) )
 
-#define BMP_NOFREE (1<<0)
-
+/**
+ * @brief Helper macro that returns a lvalue to a single pixel
+ * @param bitmap A pointer to the bitmap.
+ * @param x      x coordinate of the pixel.
+ * @param y      y coordinate of the pixel.
+ * @return writable lvalue to the pixel at (x,y)
+ * @remarks This macro does not check any out-of-bound errors and will
+ *          happily access invalid memory.
+ */
 #define PIXREF(bitmap, x, y) ((bitmap)->pixels[(bitmap)->width * (y) + (x)])
 
+/**
+ * @brief An rgba color value.
+ */
 typedef uint32_t color_t;
 
+/**
+ * @brief A GUI window
+ **/
 typedef struct quiwindow
 {
-	// Created by RPC
+	/**
+	 * @brief The identifier of this window
+	 */
 	uint32_t const id;
+
+	/**
+	 * @brief A pointer to the shared memory of the window contents.
+	 */
 	color_t * const frameBuffer;
+
+	/**
+	 * @brief Width of the window surface (without decoration)
+	 * @see quibitmap.pixels
+	 */
 	uint32_t const width;
+
+	/**
+	 * @brief Height of the window surface (without decoration)
+	 */
 	uint32_t const height;
 } window_t;
 
+/**
+ * @brief A bitmap containing RGBA pixels
+ */
 typedef struct quibitmap
 {
+	/**
+	 * @brief A pointer to the pixels of the bitmap.
+	 * The pixels are stored row-major, so it is indexed by
+	 * `pixels[y * width + x]`
+	 */
 	color_t * const pixels;
+
+	/**
+	 * @brief Width of the bitmap in pixels.
+	 */
 	uint32_t const width;
+
+	/**
+	 * @brief Height of the bitmap in pixels.
+	 */
 	uint32_t const height;
+
+	/**
+	 * @brief A set of flags for the bitmap.
+	 * @remarks Mostly used by internal functions
+	 */
 	uint32_t const flags;
 } bitmap_t;
 
+/**
+ * @brief Tries to open the UI system.
+ * @return True on success, false otherwise.
+ * @remarks The GUI service "gui" must be started in order to succeed.
+ */
 bool qui_open();
 
-// Window API
 
+/**
+ * @brief Creates a new window
+ * @param width  The width of the window.
+ * @param height The height of the window.
+ * @param flags  A set of flags affecting the window or its creation.
+ * @return Pointer to the created window or NULL on failure
+ */
 window_t * qui_createWindow(uint32_t width, uint32_t height, uint32_t flags);
 
+/**
+ * @brief Tells the GUI system that the content of this window has changed
+ *        and a redraw is required.
+ * @param window The window that should be redrawn
+ */
 void qui_updateWindow(window_t * window);
 
+/**
+ * @brief Destroys the window and frees its memory.
+ * @param window The window to be destroyed.
+ */
 void qui_destroyWindow(window_t * window);
 
+/**
+ * @brief Fetches events from the event queue.
+ * @param event A pointer to an SDL_Event struct that will contain the received
+ *              event on success.
+ * @return true when an event was fetched, false otherwise
+ * @todo Change event type to something more GUI-related with the affected
+ *       window included (so multiple windows aren't a problem)
+ */
 bool qui_fetchEvent(SDL_Event * event);
 
 // Graphics API

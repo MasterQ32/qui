@@ -7,6 +7,9 @@
 
 #include <png.h>
 
+// Bitmap flag: Don't free "pixels"
+#define BMP_NOFREE (1<<0)
+
 struct eventmsg
 {
 	SDL_Event event;
@@ -25,7 +28,7 @@ bool qui_open()
 	if(svc != 0) {
 		return true;
 	}
-	svc = init_service_get("gui");
+	svc = init_service_get(QUI_SVC);
 	if(svc != 0) {
 		register_message_handler(MSG_WINDOW_EVENT, cliReceiveEvent);
 	}
@@ -111,8 +114,6 @@ void qui_destroyWindow(window_t * window)
 
 bool qui_fetchEvent(SDL_Event * event)
 {
-	*event = ((SDL_Event) { 0 });
-
 	if(messageQueue == NULL) {
 		return false;
 	}
@@ -344,7 +345,7 @@ void qui_blitBitmapExt(
 			if(sx >= src->width || sy >= src->height) {
 				continue;
 			}
-			if(dx >= dest->width || dy >= dest->width) {
+			if(dx >= dest->width || dy >= dest->height) {
 				continue;
 			}
 			color_t color = PIXREF(src, sx, sy);

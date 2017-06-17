@@ -30,6 +30,6 @@ install:
 	$(CPTH) $(INSTALL_TO)/bin
 	$(CPTH) $(INSTALL_TO)/lib
 	$(COPY) qui_server demo fontdemo dora $(INSTALL_TO)/bin
-	$(COPY) ascii.tfn  $(INSTALL_TO)/lib
 
-	$(COPY) qui_server demo fontdemo dora ascii.tfn /home/felix/projects/tyn/tyndur/build/root-local/
+	$(COPY) qui_server demo fontdemo dora /home/felix/projects/tyn/tyndur/build/root-local/guiapps/
+	$(COPY) data/* /home/felix/projects/tyn/tyndur/build/root-local/guiapps/

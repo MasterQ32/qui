@@ -9,6 +9,30 @@
 
 #include "qui.h"
 
+struct program
+{
+	bitmap_t * icon;
+	char const * name;
+	char const * file;
+	struct program * next;
+};
+
+typedef struct program program_t;
+
+program_t * programs = NULL;
+
+program_t * addProgram(char const * name, char const * file, char const * iconFile)
+{
+	program_t * pgm = malloc(sizeof(program_t));
+	pgm->name = strdup(name);
+	pgm->file = strdup(file);
+	pgm->icon = qui_loadBitmap(iconFile);
+
+	pgm->next = programs;
+	programs = pgm;
+	return pgm;
+}
+
 int main(int argc, char ** argv)
 {
 	if(qui_open() == false) {
@@ -17,13 +41,15 @@ int main(int argc, char ** argv)
 	}
 	stdout = NULL; // Console only!
 
-	window_t * window = qui_createWindow(64, 480, 0);
+	addProgram("Font Demo", "file:/guiapps/fontdemo", "/guiapps/fontdemo.png");
+	addProgram("Demo", "file:/guiapps/demo", "/guiapps/demo.png");
+	addProgram("Dora", "file:/guiapps/dora", "/guiapps/dora.png");
+
+	window_t * window = qui_createWindow(48, 48 * 3, 0);
 	if(window == NULL) {
 		printf("Failed to create window!\n");
 		exit(EXIT_FAILURE);
 	}
-
-	bitmap_t * skinImage = qui_loadBitmap("skin.png");
 
 	bool requiresPaint = true; // Initially, draw a frame!
 	bool requiresQuit = false;
@@ -36,27 +62,30 @@ int main(int argc, char ** argv)
 				case SDL_QUIT:
 					requiresQuit = true;
 					break;
-				case SDL_KEYDOWN:
-					printf("Key down: %d, '%c'\n", e.key.keysym.sym, e.key.keysym.unicode);
-					if(e.key.keysym.sym == SDLK_e) {
-						const char * args[] = {
-							NULL,
-						};
-						init_execv("dora", args);
+				case SDL_MOUSEBUTTONDOWN: {
+					if(e.button.x < 8 || e.button.x >= 40) {
+						break;
 					}
-					else if(e.key.keysym.sym == SDLK_f) {
-						const char * args[] = {
-							NULL,
-						};
-						init_execv("fontdemo", args);
+					int index = e.button.y / 48;
+					int offset = e.button.y % 48;
+					if(offset < 8 || offset >= 40) {
+						break;
 					}
-					else if(e.key.keysym.sym == SDLK_d) {
+
+					program_t * it = programs;
+					while(it != NULL && index > 0) {
+						it = it->next;
+						index--;
+					}
+
+					if(it != NULL) {
 						const char * args[] = {
 							NULL,
 						};
-						init_execv("demo", args);
+						init_execv(it->file, args);
 					}
 					break;
+				}
 			}
 		}
 
@@ -69,11 +98,15 @@ int main(int argc, char ** argv)
 			// Clear window
 			qui_clearBitmap(surface, RGBA(0, 0, 0, 0));
 
-			qui_blitBitmap(
-				skinImage,
-				surface,
-				4,
-				4);
+			int y = 8;
+			for(program_t * it = programs; it != NULL; it = it->next) {
+				qui_blitBitmap(
+					it->icon,
+					surface,
+					8,
+					y);
+				y += 48;
+			}
 
 			// Send the graphics to the "server"
 			qui_updateWindow(window);

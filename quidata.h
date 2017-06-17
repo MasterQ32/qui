@@ -1,6 +1,7 @@
 #pragma once
 #include <stdbool.h>
 
+#define QUI_SVC            "gui"
 #define MSG_WINDOW_CREATE  "WNCREATE"
 #define MSG_WINDOW_DESTROY "WNDESTRO"
 #define MSG_WINDOW_UPDATE  "WNUPDATE"

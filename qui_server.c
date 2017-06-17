@@ -387,11 +387,6 @@ struct window * getFocus() { return top; }
 
 int main(int argc, char** argv)
 {
-	// Write to serial out instead of vconsole
-	stdout = NULL;
-
-	// video_init();
-
 	if(SDL_Init(SDL_INIT_VIDEO) < 0) {
 		printf("Failed to initialize SDL: %s\n", SDL_GetError());
 		exit(EXIT_FAILURE);
@@ -407,6 +402,9 @@ int main(int argc, char** argv)
 		printf("Failed to open video: %s\n", SDL_GetError());
 		exit(EXIT_FAILURE);
 	}
+
+	// Write to serial out instead of vconsole
+	stdout = NULL;
 
 	printf("Screen Info:\n");
 	printf("\tResolution: %d×%d\n", screen->w, screen->h);
@@ -426,13 +424,13 @@ int main(int argc, char** argv)
 		screen->format->Bmask,
 		screen->format->Amask);
 
-	skin = IMG_Load("skin.png");
+	skin = IMG_Load("/guiapps/skin.png");
 	if(skin == NULL) {
 		printf("Failed to open image: %s\n", IMG_GetError());
 		exit(EXIT_FAILURE);
 	}
 
-	SDL_Surface * cursor = IMG_Load("cursor.png");
+	SDL_Surface * cursor = IMG_Load("/guiapps/cursor.png");
 	if(cursor == NULL) {
 		printf("Failed to open image: %s\n", IMG_GetError());
 		exit(EXIT_FAILURE);
@@ -440,17 +438,17 @@ int main(int argc, char** argv)
 
 	SDL_ShowCursor(SDL_DISABLE);
 
-	init_service_register("gui");
-
 	register_message_handler(MSG_WINDOW_CREATE, svcWindowCreate);
 	register_message_handler(MSG_WINDOW_DESTROY, svcWindowDestroy);
 	register_message_handler(MSG_WINDOW_UPDATE, svcWindowUpdate);
+
+	init_service_register(QUI_SVC);
 
 	// Start dora!
 	const char * args[] = {
 		NULL,
 	};
-	pid_t dora_id = init_execv("dora", args);
+	pid_t dora_id = init_execv("file:/guiapps/dora", args);
 
 	SDL_Event e;
 	bool quit = false;
