@@ -1,14 +1,14 @@
-BCC = $(CC) $(CFLAGS) -O3 -DLBUILD_PACKAGE="\"${PN}\"" -g -std=c99 -I include -I$(WORKDIR)/env/include -L$(WORKDIR)/env/lib -o
+BCC = $(CC) $(CFLAGS) -O3 -DLBUILD_PACKAGE="\"${PN}\"" -DLBUILD_VERSION="\"${PV}\"" -g -std=c99 -I include -I$(WORKDIR)/env/include -L$(WORKDIR)/env/lib -o
 MV = mv
 RM = rm
 COPY = cp
 CPTH = install -d
 
+PROGRAMS = qui_server demo fontdemo dora qterm
+
 .PHONY: all clean install
 
-all: qui_server demo fontdemo dora
-	echo "Name: ${PN}"
-	echo "Version: $(PV)"
+all: $(PROGRAMS)
 
 qui_server: src/qui_server.c include/qui.h include/quidata.h
 	$(BCC) qui_server src/qui_server.c -lSDL_image -lSDL -lpng  -ljpeg -lz \
@@ -23,6 +23,9 @@ fontdemo: src/fontdemo.c src/qui.c include/qui.h src/tfont.c include/tfont.h inc
 
 dora: src/dora.c src/qui.c include/qui.h include/quidata.h
 	$(BCC) $@ src/dora.c src/qui.c -lpng -lz
+	
+qterm: src/qterm.c src/qui.c include/qui.h include/quidata.h
+	$(BCC) $@ src/qterm.c src/qui.c -lpng -lz
 
 	
 clean:
@@ -31,7 +34,7 @@ clean:
 install:
 	$(CPTH) $(INSTALL_TO)/bin
 	$(CPTH) $(INSTALL_TO)/share
-	$(COPY) qui_server demo fontdemo dora $(INSTALL_TO)/bin/
+	$(COPY) $(PROGRAMS) $(INSTALL_TO)/bin/
 	$(COPY) data/* $(INSTALL_TO)/share/
 
 #	$(COPY) qui_server demo fontdemo dora /home/felix/projects/tyn/tyndur/build/root-local/guiapps/

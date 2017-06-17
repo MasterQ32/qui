@@ -84,7 +84,7 @@ void load(const char *fileName)
 
 int main(int argc, char ** argv)
 {
-	load("/guiapps/ascii.tfn");
+	load(QUI_RESOURCE("ascii.tfn"));
 	tfont_setSize(12);
 	tfont_setDotSize(0);
 	tfont_setFont(&getGlyph);

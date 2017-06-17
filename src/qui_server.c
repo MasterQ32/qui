@@ -236,6 +236,7 @@ void renderWindow(struct window * window)
 	}
 
 	const SDL_Rect target = getWindowRect(window);
+	if(false) // Don't draw the outline!
 	{
 		SDL_Rect outline = target;
 		outline.x -= 1;
@@ -401,19 +402,6 @@ struct window * getFocus() { return top; }
 
 int main(int argc, char** argv)
 {
-//	// Initialize keyboard system
-//	kbc_pid = init_service_get("kbc");
-//	if(kbc_pid == 0) {
-//		printf("Failed to get keyboard service!\n");
-//		exit(EXIT_FAILURE);
-//	}
-//	register_message_handler(KBD_RPC_CALLBACK, svnKeyboardCallback);
-
-//	if(rpc_get_dword(kbc_pid, KBD_RPC_REGISTER_CALLBACK, 0, NULL) == 0) {
-//		printf("Failed to initialize keyboard callback!\n");
-//		exit(EXIT_FAILURE);
-//	}
-
 	// Initialize video
 	if(SDL_Init(SDL_INIT_VIDEO) < 0) {
 		printf("Failed to initialize SDL: %s\n", SDL_GetError());

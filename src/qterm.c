@@ -6,6 +6,9 @@
 
 #include "qui.h"
 
+#define CHR_WIDTH  7
+#define CHR_HEIGHT 9
+
 int main(int argc, char ** argv)
 {
 	if(qui_open() == false) {
@@ -13,7 +16,16 @@ int main(int argc, char ** argv)
 		exit(EXIT_FAILURE);
 	}
 
-	window_t * window = qui_createWindow(48, 48 * 3, 0);
+	bitmap_t * font = qui_loadBitmap(QUI_RESOURCE("qterm-font.png"));
+	if(font == NULL) {
+		printf("Failed to load qterm-font.png!\n");
+		exit(EXIT_FAILURE);
+	}
+
+	window_t * window = qui_createWindow(
+		80 * CHR_WIDTH + 2,
+		25 * CHR_HEIGHT + 2,
+		0);
 	if(window == NULL) {
 		printf("Failed to create window!\n");
 		exit(EXIT_FAILURE);
@@ -30,30 +42,6 @@ int main(int argc, char ** argv)
 				case SDL_QUIT:
 					requiresQuit = true;
 					break;
-				case SDL_MOUSEBUTTONDOWN: {
-					if(e.button.x < 8 || e.button.x >= 40) {
-						break;
-					}
-					int index = e.button.y / 48;
-					int offset = e.button.y % 48;
-					if(offset < 8 || offset >= 40) {
-						break;
-					}
-
-					program_t * it = programs;
-					while(it != NULL && index > 0) {
-						it = it->next;
-						index--;
-					}
-
-					if(it != NULL) {
-						const char * args[] = {
-							NULL,
-						};
-						init_execv(it->file, args);
-					}
-					break;
-				}
 			}
 		}
 
@@ -63,20 +51,29 @@ int main(int argc, char ** argv)
 
 		if(requiresPaint && !requiresQuit) {
 			bitmap_t * surface = qui_getWindowSurface(window);
-			// Clear window
-			qui_clearBitmap(surface, RGBA(0, 0, 0, 0));
+			qui_clearBitmap(surface, RGB(0, 0, 0)); // Nice black background
 
-			int y = 8;
-			for(program_t * it = programs; it != NULL; it = it->next) {
-				qui_blitBitmap(
-					it->icon,
-					surface,
-					8,
-					y);
-				y += 48;
+			// Render text content here...
+			char const * str = "Hello, World!";
+
+			for(int i = 0; str[i]; i++) {
+				char c = str[i];
+				if(c >= ' ' && c < 128) {
+					int srcX = CHR_WIDTH * ((c - ' ') % 18);
+					int srcY = CHR_HEIGHT * ((c - ' ') / 18);
+
+					qui_blitBitmapExt(
+						font,
+						srcX, srcY,
+						surface,
+						1 + CHR_WIDTH * i, 1 + 0 * CHR_HEIGHT,
+						CHR_WIDTH, CHR_HEIGHT);
+
+				} else {
+					// Unsupported character :(
+				}
 			}
 
-			// Send the graphics to the "server"
 			qui_updateWindow(window);
 			requiresPaint = false;
 		}

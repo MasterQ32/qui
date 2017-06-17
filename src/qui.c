@@ -333,6 +333,9 @@ void qui_blitBitmapExt(
 	if(src == NULL || dest == NULL) {
 		return;
 	}
+	if(width <= 0 || height <= 0) {
+		return;
+	}
 	for(int y = 0; y < height; y++) {
 		for(int x = 0; x < width; x++) {
 			int sx = srcX + x;

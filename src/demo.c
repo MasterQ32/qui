@@ -10,10 +10,6 @@
 
 int main(int argc, char ** argv)
 {
-	printf("Package:     %s\n", LBUILD_PACKAGE);
-	printf("Root folder: %s\n", QUI_ROOT);
-	return EXIT_SUCCESS;
-
 	if(qui_open() == false) {
 		printf("Failed to open gui!\n");
 		exit(EXIT_FAILURE);

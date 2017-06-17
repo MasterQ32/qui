@@ -6,9 +6,15 @@
 
 #ifndef LBUILD_PACKAGE
 #error LBUILD_PACKAGE must be defined!
+#define LBUILD_PACKAGE "stub"
 #endif
 
-#define QUI_ROOT "file:/packages/" LBUILD_PACKAGE "/"
+#ifndef LBUILD_VERSION
+#error LBUILD_VERSION must be defined!
+#define LBUILD_VERSION "0.0"
+#endif
+
+#define QUI_ROOT "file:/packages/" LBUILD_PACKAGE "/" LBUILD_VERSION "/"
 
 #define QUI_RESOURCE(filename) QUI_ROOT "share/" filename
 

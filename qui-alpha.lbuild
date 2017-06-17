@@ -3,7 +3,7 @@ include lutils
 
 DESCRIPTION="An experimental UI system"
 HOMEPAGE="https://mq32.de"
-SRC_URI="${P}.stub"
+SRC_URI=""
 
 LICENSE="GPLv2"
 
@@ -13,19 +13,20 @@ RUN_DEPEND=""
 MY_S="${S}/${P}"
 
 src_unpack() {
+	cd ${MY_S}
 #	git clone /home/felix/projects/tyn/qui .
-	cp -r /home/felix/projects/tyn/qui/* .
+	cp -r /home/felix/projects/tyn/qui/* . || die "copy failed!"
 }
 
 src_compile() {
-#	cd ${MY_S}
+	cd ${MY_S}
 	lmake CC=i386-pc-tyndur-gcc || die "make failed"
 	cd ..
 }
 
 src_install() {
 	cd ${MY_S}
-
+	echo "${D}" "?" "${R}"
 	lmake install INSTALL_TO="${D}${R}" || die "make install failed"
 #	rm -rf ${D}${R}/share
 }

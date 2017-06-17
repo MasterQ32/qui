@@ -41,11 +41,17 @@ int main(int argc, char ** argv)
 	}
 	stdout = NULL; // Console only!
 
-	addProgram("Font Demo", "file:/guiapps/fontdemo", "/guiapps/fontdemo.png");
-	addProgram("Demo", "file:/guiapps/demo", "/guiapps/demo.png");
-	addProgram("Dora", "file:/guiapps/dora", "/guiapps/dora.png");
+	addProgram("Font Demo", QUI_ROOT "bin/fontdemo", QUI_RESOURCE("fontdemo.png"));
+	addProgram("Demo", QUI_ROOT "bin/demo", QUI_RESOURCE("demo.png"));
+	addProgram("QTerm", QUI_ROOT "bin/qterm", QUI_RESOURCE("qterm.png"));
+	addProgram("Dora", QUI_ROOT "bin/dora", QUI_RESOURCE("dora.png"));
 
-	window_t * window = qui_createWindow(48, 48 * 3, 0);
+	int size = 0;
+	for(program_t * it = programs; it  != NULL; it = it->next) {
+		++size;
+	}
+
+	window_t * window = qui_createWindow(48, 48 * size, 0);
 	if(window == NULL) {
 		printf("Failed to create window!\n");
 		exit(EXIT_FAILURE);
