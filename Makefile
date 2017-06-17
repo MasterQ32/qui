@@ -9,18 +9,18 @@ CPTH = install -d
 all: qui_server demo fontdemo dora
 
 qui_server: qui_server.c
-	$(BCC) qui_server qui_server.c -lSDL_image -lSDL  -lpng  -ljpeg -lz \
+	$(BCC) qui_server qui_server.c -lSDL_image -lSDL -lpng  -ljpeg -lz \
 		-I$(WORKDIR)/env/include \
 		-L$(WORKDIR)/env/lib
 
 demo: demo.c qui.c qui.h
-	$(BCC) $@ demo.c qui.c
+	$(BCC) $@ demo.c qui.c -lpng -lz
 
 fontdemo: fontdemo.c qui.c qui.h tfont.c tfont.h
-	$(BCC) $@ fontdemo.c qui.c tfont.c
+	$(BCC) $@ fontdemo.c qui.c tfont.c -lpng -lz
 
 dora: dora.c qui.c qui.h
-	$(BCC) $@ dora.c qui.c
+	$(BCC) $@ dora.c qui.c -lpng -lz
 
 	
 clean:

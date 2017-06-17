@@ -11,18 +11,19 @@
 
 int main(int argc, char ** argv)
 {
-	stdout = NULL; // Console only!
-
 	if(qui_open() == false) {
 		printf("Failed to open gui!\n");
 		exit(EXIT_FAILURE);
 	}
+	stdout = NULL; // Console only!
 
 	window_t * window = qui_createWindow(64, 480, 0);
 	if(window == NULL) {
 		printf("Failed to create window!\n");
 		exit(EXIT_FAILURE);
 	}
+
+	bitmap_t * skinImage = qui_loadBitmap("skin.png");
 
 	bool requiresPaint = true; // Initially, draw a frame!
 	bool requiresQuit = false;
@@ -68,7 +69,11 @@ int main(int argc, char ** argv)
 			// Clear window
 			qui_clearBitmap(surface, RGBA(0, 0, 0, 0));
 
-
+			qui_blitBitmap(
+				skinImage,
+				surface,
+				4,
+				4);
 
 			// Send the graphics to the "server"
 			qui_updateWindow(window);

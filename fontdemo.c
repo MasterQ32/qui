@@ -85,8 +85,6 @@ void load(const char *fileName)
 
 int main(int argc, char ** argv)
 {
-	stdout = NULL; // Console only!
-
 	load("ascii.tfn");
 	tfont_setSize(12);
 	tfont_setDotSize(0);
@@ -96,6 +94,8 @@ int main(int argc, char ** argv)
 		printf("Failed to open gui!\n");
 		exit(EXIT_FAILURE);
 	}
+
+	stdout = NULL; // Console only!
 
 	char const * text = "Quäker würgen Meißen völlig übertrieben.\n"
 	                    "f(x) = 10 × a ÷ 3\n"

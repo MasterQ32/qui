@@ -10,12 +10,11 @@
 
 int main(int argc, char ** argv)
 {
-	stdout = NULL; // Console only!
-
 	if(qui_open() == false) {
 		printf("Failed to open gui!\n");
 		exit(EXIT_FAILURE);
 	}
+	stdout = NULL; // Console only!
 
 	window_t * window = qui_createWindow(640, 480, 0);
 	if(window == NULL) {
