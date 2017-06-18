@@ -19,7 +19,8 @@ SOURCES += \
     src/tfont.c \
     src/fontdemo.c \
     src/dora.c \
-    src/qterm.c
+    src/qterm.c \
+    src/pingpong.c
 
 INCLUDEPATH += "/home/felix/projects/tyn/lbuilds/env/include/"
 INCLUDEPATH += "$$PWD/include/"

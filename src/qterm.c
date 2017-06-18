@@ -2,8 +2,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <syscall.h>
-// #include <init.h>
+#include <init.h>
 #include <rpc.h>
+#include <lostio.h>
 
 #include "qui.h"
 
@@ -166,6 +167,24 @@ static int clamp(int v, int min, int max)
 	return v;
 }
 
+// Terminal schreibt nach myoutput, liest von myinput
+lio_stream_t myinput, myoutput;
+
+// Kindprozess schreibt nach "childoutput" und liest von "childinput"
+lio_stream_t childinput, childoutput;
+
+void termwrite(void const * buffer, size_t length)
+{
+	if(lio_write(myoutput, length, buffer) != length) {
+		printf("Failed to write complete output!\n");
+	}
+}
+
+int termread(void * buffer, size_t length)
+{
+	return lio_readf(myinput, 0, length, buffer, LIO_REQ_FILEPOS);
+}
+
 int main(int argc, char ** argv)
 {
 	if(qui_open() == false) {
@@ -205,23 +224,25 @@ int main(int argc, char ** argv)
 
 	clearTerm(0x0, 0x7);
 
-	for(int _i = 0; _i < 120; _i++) {
-		int i = _i;
-		char str[5] = "000\n";
-		str[2] = '0' + (i % 10); i /= 10;
-		str[1] = '0' + (i % 10); i /= 10;
-		str[0] = '0' + (i % 10); i /= 10;
-		tputc(str[0]);
-		tputc(str[1]);
-		tputc(str[2]);
-		tputc(str[3]);
-		printf("%s", str);
-	}
-
 	// TODO: Was tut das ?
 	timer_register(blinkCursor, 250000);
 
 	uint64_t tick = get_tick_count();
+
+	if(lio_pipe(&myinput, &childoutput, false) < 0) {
+		printf("Failed to create pipe!\n");
+	}
+	if(lio_pipe(&childinput, &myoutput, false) < 0) {
+		printf("Failed to create pipe!\n");
+	}
+
+	FILE * pout = stdout, * pin = stdin, * perr = stderr;
+
+	stdout = stderr = __create_file_from_lio_stream(childoutput);
+	stdin = __create_file_from_lio_stream(childinput);
+
+	// init_execute(QUI_ROOT "bin/pingpong");
+	init_execute("file:/apps/sh");
 
 	bool requiresQuit = false;
 	bool dragging = false;
@@ -235,7 +256,10 @@ int main(int argc, char ** argv)
 					break;
 				case SDL_KEYDOWN:
 					if(e.key.keysym.unicode != 0) {
-						tputc(e.key.keysym.unicode);
+						// TODO: Encode unicode
+						char input = e.key.keysym.unicode;
+
+						termwrite(&input, sizeof input);
 					}
 					if(e.key.keysym.sym == SDLK_PAGEUP) {
 						terminal.scroll -= 10;
@@ -253,6 +277,16 @@ int main(int argc, char ** argv)
 			break;
 		}
 
+
+		// Lese Daten vom "Kindprozess"!
+		{
+			char buffer[256];
+			int len = termread(buffer, sizeof(buffer));
+			for(int i = 0; i < len; i++) {
+				tputc(buffer[i]);
+			}
+		}
+
 		if(get_tick_count() > (tick + 250000)) {
 			blinkCursor();
 			tick = get_tick_count();
@@ -268,8 +302,6 @@ int main(int argc, char ** argv)
 
 			int top = terminal.scroll;
 			int bottom = terminal.scroll + TERM_HEIGHT;
-
-			printf("Render from line %d to %d\n", top, bottom);
 
 			for(int y = top; y < bottom; y++) {
 				for(int x = 0; x < TERM_WIDTH; x++) {
@@ -318,6 +350,14 @@ int main(int argc, char ** argv)
 		// wait_for_rpc();
 		yield();
 	}
+
+	fclose(stdin);
+	fclose(stdout);
+	fclose(stderr);
+
+	stdin = pin;
+	stdout = pout;
+	stderr = perr;
 
 	printf("CLIENT: Shutdown!\n");
 

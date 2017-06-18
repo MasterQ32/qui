@@ -4,7 +4,7 @@ RM = rm
 COPY = cp
 CPTH = install -d
 
-PROGRAMS = qui_server demo fontdemo dora qterm
+PROGRAMS = qui_server demo fontdemo dora qterm pingpong
 
 .PHONY: all clean install
 
@@ -23,11 +23,13 @@ fontdemo: src/fontdemo.c src/qui.c include/qui.h src/tfont.c include/tfont.h inc
 
 dora: src/dora.c src/qui.c include/qui.h include/quidata.h
 	$(BCC) $@ src/dora.c src/qui.c -lpng -lz
-	
+
 qterm: src/qterm.c src/qui.c include/qui.h include/quidata.h
 	$(BCC) $@ src/qterm.c src/qui.c -lpng -lz
 
-	
+pingpong: src/pingpong.c
+	$(BCC) $@ src/pingpong.c
+
 clean:
 	-$(RM) qui demo
 
