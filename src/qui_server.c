@@ -15,6 +15,7 @@
 #include <syscall.h>
 #include <sys/wait.h>
 #include <kbd.h>
+#include <lostio.h>
 
 #include "qui.h"
 #include "quidata.h"
@@ -529,8 +530,7 @@ int main(int argc, char** argv)
 			if(e.type == SDL_MOUSEBUTTONUP) {
 				draggedWindow = NULL;
 			}
-			if(e.type == SDL_MOUSEMOTION)
-			{
+			if(e.type == SDL_MOUSEMOTION) {
 				mouseX = e.motion.x;
 				mouseY = e.motion.y;
 				if(draggedWindow != NULL) {
@@ -538,6 +538,15 @@ int main(int argc, char** argv)
 					draggedWindow->top += e.motion.yrel;
 					dirty = true;
 				}
+			}
+
+			if(e.type == SDL_KEYDOWN) {
+				// Eat it, just eat it!
+				// Mampfe den stdin-stream einfach mal weg, damit der keyboard
+				// input nicht nachträglich ausgegeben wird.
+				lio_stream_t stream = file_get_stream(stdin);
+				char buf[100];
+				lio_readf(stream, 0, 100, buf, LIO_REQ_FILEPOS);
 			}
 
 			struct window * focus = getFocus();
