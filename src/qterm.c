@@ -119,11 +119,20 @@ void tnewline()
 		}
 		terminal.cursor.y = TERM_LINES - 1;
 	}
+
+	if(terminal.cursor.y < terminal.scroll) {
+		terminal.scroll = terminal.cursor.y;
+	}
+	if(terminal.cursor.y >= (terminal.scroll + TERM_HEIGHT)) {
+		terminal.scroll = terminal.cursor.y - TERM_HEIGHT + 1;
+	}
 }
 
 void tputc(char c)
 {
 	switch(c) {
+		case '\0':
+			return;
 		case '\r':
 			terminal.cursor.x = 0;
 			break;
@@ -178,7 +187,6 @@ int main(int argc, char ** argv)
 
 	bitmap_t * backgrounds = qui_createBitmap(CHR_WIDTH * 16, CHR_HEIGHT);
 	for(int i = 0; i < 16; i++) {
-		printf("Initialize backgrounds bitmap %d: %x!\n", i, colorTable[i]);
 		for(int y = 0; y < CHR_HEIGHT; y++) {
 			for(int x = 0; x < CHR_WIDTH; x++) {
 				PIXREF(backgrounds, CHR_WIDTH * i + x, y) = colorTable[i];
@@ -197,9 +205,17 @@ int main(int argc, char ** argv)
 
 	clearTerm(0x0, 0x7);
 
-	char const * str = "Hallo, Terminal!\n";
-	for(int i = 0; str[i]; i++) {
-		tputc(str[i]);
+	for(int _i = 0; _i < 120; _i++) {
+		int i = _i;
+		char str[5] = "000\n";
+		str[2] = '0' + (i % 10); i /= 10;
+		str[1] = '0' + (i % 10); i /= 10;
+		str[0] = '0' + (i % 10); i /= 10;
+		tputc(str[0]);
+		tputc(str[1]);
+		tputc(str[2]);
+		tputc(str[3]);
+		printf("%s", str);
 	}
 
 	// TODO: Was tut das ?
@@ -221,6 +237,14 @@ int main(int argc, char ** argv)
 					if(e.key.keysym.unicode != 0) {
 						tputc(e.key.keysym.unicode);
 					}
+					if(e.key.keysym.sym == SDLK_PAGEUP) {
+						terminal.scroll -= 10;
+						invalidate();
+					}
+					if(e.key.keysym.sym == SDLK_PAGEDOWN) {
+						terminal.scroll += 10;
+						invalidate();
+					}
 					break;
 			}
 		}
@@ -236,14 +260,7 @@ int main(int argc, char ** argv)
 
 		// Bring the terminal into a valid position!
 
-		if(terminal.cursor.y < terminal.scroll) {
-			terminal.scroll = terminal.cursor.y;
-		}
-		if(terminal.cursor.y >= (terminal.scroll + TERM_HEIGHT)) {
-			terminal.scroll = terminal.cursor.y - TERM_HEIGHT + 1;
-		}
-
-		terminal.scroll = clamp(terminal.scroll, 0, TERM_LINES - TERM_HEIGHT - 1);
+		terminal.scroll = clamp(terminal.scroll, 0, TERM_LINES - TERM_HEIGHT);
 
 		if(requiresPaint && !requiresQuit) {
 			bitmap_t * surface = qui_getWindowSurface(window);
@@ -251,6 +268,9 @@ int main(int argc, char ** argv)
 
 			int top = terminal.scroll;
 			int bottom = terminal.scroll + TERM_HEIGHT;
+
+			printf("Render from line %d to %d\n", top, bottom);
+
 			for(int y = top; y < bottom; y++) {
 				for(int x = 0; x < TERM_WIDTH; x++) {
 					termchar_t c = terminal.contents[y][x];
@@ -262,19 +282,22 @@ int main(int argc, char ** argv)
 						1 + CHR_WIDTH * x, 1 + CHR_HEIGHT * (y - top),
 						CHR_WIDTH, CHR_HEIGHT);
 
-					if(c.codepoint >= ' ' && c.codepoint < 128) {
-						int srcX = CHR_WIDTH * ((c.codepoint - ' ') % 18);
-						int srcY = CHR_HEIGHT * ((c.codepoint - ' ') / 18);
+					// Blanks won't be drawn ;)
+					if(c.codepoint != ' ') {
+						if(c.codepoint > ' ' && c.codepoint < 128) {
+							int srcX = CHR_WIDTH * ((c.codepoint - ' ') % 18);
+							int srcY = CHR_HEIGHT * ((c.codepoint - ' ') / 18);
 
-						qui_blitBitmapExt(
-							fonts[c.foreground],
-							srcX, srcY,
-							surface,
-							1 + CHR_WIDTH * x, 1 + CHR_HEIGHT * (y - top),
-							CHR_WIDTH, CHR_HEIGHT);
+							qui_blitBitmapExt(
+								fonts[c.foreground],
+								srcX, srcY,
+								surface,
+								1 + CHR_WIDTH * x, 1 + CHR_HEIGHT * (y - top),
+								CHR_WIDTH, CHR_HEIGHT);
 
-					} else {
-						// Unsupported character :(
+						} else {
+							// Unsupported character :(
+						}
 					}
 
 					if(terminal.cursorVisible && terminal.cursor.x == x && terminal.cursor.y == y) {
