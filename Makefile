@@ -37,5 +37,6 @@ install:
 	$(COPY) $(PROGRAMS) $(INSTALL_TO)/bin/
 	$(COPY) data/* $(INSTALL_TO)/share/
 
-#	$(COPY) qui_server demo fontdemo dora /home/felix/projects/tyn/tyndur/build/root-local/guiapps/
+	# Cheat: Copy the server to root as well, so we can just call it
+	$(COPY) qui_server /home/felix/projects/tyn/tyndur/build/root-local/
 #	$(COPY) data/* /home/felix/projects/tyn/tyndur/build/root-local/guiapps/

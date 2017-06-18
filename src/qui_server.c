@@ -149,12 +149,12 @@ void svcWindowCreate(pid_t client, uint32_t correlation_id, size_t size, void *a
         0x000000FF,
 	    0xFF000000);
 
-	printf("SERVER: Created window %d×%d, %d, %p, %p\n",
-		window->width,
-		window->height,
-		window->membuf,
-		window->framebuffer,
-		window->surface);
+//	printf("SERVER: Created window %d×%d, %d, %p, %p\n",
+//		window->width,
+//		window->height,
+//		window->membuf,
+//		window->framebuffer,
+//		window->surface);
 
 	insertWindow(window);
 
@@ -182,7 +182,7 @@ void svcWindowDestroy(pid_t client, uint32_t correlation_id, size_t size, void *
 
 	removeWindow(window);
 
-	printf("SERVER: Destroyed window %d\n", window->membuf);
+//	printf("SERVER: Destroyed window %d\n", window->membuf);
 
 	close_shared_memory(window->membuf);
 	SDL_FreeSurface(window->surface);
@@ -205,7 +205,7 @@ void svcWindowUpdate(pid_t client, uint32_t correlation_id, size_t size, void * 
 		return;
 	}
 
-	printf("SERVER: Update window %d!\n", window->membuf);
+//	printf("SERVER: Update window %d!\n", window->membuf);
 	window->flags |= WF_DIRTY;
 
 	rpc_send_int_response(client, correlation_id, 0);
@@ -402,6 +402,11 @@ struct window * getFocus() { return top; }
 
 int main(int argc, char** argv)
 {
+	if(init_service_get(QUI_SVC) != 0) {
+		printf("Another instance of " LBUILD_PACKAGE " is already running!\n");
+		exit(EXIT_FAILURE);
+	}
+
 	// Initialize video
 	if(SDL_Init(SDL_INIT_VIDEO) < 0) {
 		printf("Failed to initialize SDL: %s\n", SDL_GetError());
@@ -466,7 +471,8 @@ int main(int argc, char** argv)
 	const char * args[] = {
 		NULL,
 	};
-	pid_t dora_id = init_execv(QUI_ROOT "bin/dora", args);
+	// pid_t dora_id = init_execv(QUI_ROOT "bin/dora", args);
+	pid_t dora_id = init_execv(QUI_ROOT "bin/qterm", args);
 
 	SDL_Event e;
 	bool quit = false;

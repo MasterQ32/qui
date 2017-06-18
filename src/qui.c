@@ -31,6 +31,7 @@ bool qui_open()
 	svc = init_service_get(QUI_SVC);
 	if(svc != 0) {
 		register_message_handler(MSG_WINDOW_EVENT, cliReceiveEvent);
+		stdout = NULL; // Umbiegen!
 	}
 	return (svc != 0);
 }
