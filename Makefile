@@ -1,44 +1,38 @@
-BCC = $(CC) $(CFLAGS) -O3 -DLBUILD_PACKAGE="\"${PN}\"" -DLBUILD_VERSION="\"${PV}\"" -g -std=c99 -I include -I$(WORKDIR)/env/include -L$(WORKDIR)/env/lib -o
 MV = mv
 RM = rm
 COPY = cp
 CPTH = install -d
 
-PROGRAMS = qui_server demo fontdemo dora qterm pingpong
+.PHONY: all clean install subdirs
 
-.PHONY: all clean install
+THINGS=bin/quisrv lib/libqui.a bin/qterm bin/dora
 
-all: $(PROGRAMS)
+all: subdirs $(THINGS)
 
-qui_server: src/qui_server.c include/qui.h include/quidata.h
-	$(BCC) qui_server src/qui_server.c -lSDL_image -lSDL -lpng  -ljpeg -lz \
-		-I$(WORKDIR)/env/include \
-		-L$(WORKDIR)/env/lib
+bin/quisrv:
+	$(MAKE) -C src/server/
+	
+lib/libqui.a:
+	$(MAKE) -C src/lib/
+	
+bin/qterm:
+	$(MAKE) -C src/addons/qterm/
 
-demo: src/demo.c src/qui.c include/qui.h include/quidata.h
-	$(BCC) $@ src/demo.c src/qui.c -lpng -lz
+bin/dora:
+	$(MAKE) -C src/addons/dora/
+	
 
-fontdemo: src/fontdemo.c src/qui.c include/qui.h src/tfont.c include/tfont.h include/quidata.h
-	$(BCC) $@ src/fontdemo.c src/qui.c src/tfont.c -lpng -lz
-
-dora: src/dora.c src/qui.c include/qui.h include/quidata.h
-	$(BCC) $@ src/dora.c src/qui.c -lpng -lz
-
-qterm: src/qterm.c src/qui.c include/qui.h include/quidata.h
-	$(BCC) $@ src/qterm.c src/qui.c -lpng -lz
-
-pingpong: src/pingpong.c
-	$(BCC) $@ src/pingpong.c
+subdirs:
+	mkdir -p bin
+	mkdir -p lib
 
 clean:
-	-$(RM) qui demo
+	-$(RM) $(THINGS)
 
 install:
 	$(CPTH) $(INSTALL_TO)/bin
+	$(CPTH) $(INSTALL_TO)/lib
 	$(CPTH) $(INSTALL_TO)/share
-	$(COPY) $(PROGRAMS) $(INSTALL_TO)/bin/
+	$(COPY) bin/* $(INSTALL_TO)/bin/
+	$(COPY) lib/* $(INSTALL_TO)/lib/
 	$(COPY) data/* $(INSTALL_TO)/share/
-
-	# Cheat: Copy the server to root as well, so we can just call it
-	$(COPY) qui_server /home/felix/projects/tyn/tyndur/build/root-local/
-#	$(COPY) data/* /home/felix/projects/tyn/tyndur/build/root-local/guiapps/
