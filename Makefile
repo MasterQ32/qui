@@ -5,7 +5,7 @@ CPTH = install -d
 
 .PHONY: all clean install subdirs
 
-THINGS=bin/quisrv lib/libqui.a bin/qterm bin/dora
+THINGS=bin/quisrv lib/libqui.a bin/qterm bin/dora bin/fontdemo bin/guidemo
 
 all: subdirs $(THINGS)
 
@@ -20,6 +20,9 @@ bin/qterm:
 
 bin/dora:
 	$(MAKE) -C src/addons/dora/
+	
+bin/guidemo bin/fontdemo:
+	$(MAKE) -C src/demos/
 	
 
 subdirs:
